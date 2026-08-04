@@ -23,12 +23,12 @@ export interface Exercise {
 export interface Student {
   id: string
   name: string
-  email: string
+  email?: string
   phone?: string
   enrollmentDate: string
   daysAccompanied: number
   avatarInitials: string
-  photo?: string
+  notes?: string
 }
 
 export interface PerformanceMetrics {
@@ -58,15 +58,23 @@ export interface ChartPoint {
   label?: string
 }
 
+export interface RepsSessionPoint {
+  label: string
+  planned: number
+  done: number
+}
+
 export interface EvolutionSeries {
   runningTime: ChartPoint[]
   absAverage: ChartPoint[]
   plank: ChartPoint[]
   load: ChartPoint[]
   performance: ChartPoint[]
+  repsSessions: RepsSessionPoint[]
 }
 
-export interface AppData {
+/** Registro completo de um aluno no painel do personal */
+export interface StudentRecord {
   student: Student
   exercises: Exercise[]
   metrics: PerformanceMetrics
@@ -74,15 +82,4 @@ export interface AppData {
   evolution: EvolutionSeries
 }
 
-export interface WorkoutShare {
-  id: string
-  createdAt: string
-  data: AppData
-}
-
-export interface ShareDispatchResult {
-  shareId: string
-  link: string
-  email: { ok: boolean; method: 'service' | 'mailto'; detail: string }
-  whatsappUrl: string
-}
+export interface AppData extends StudentRecord {}

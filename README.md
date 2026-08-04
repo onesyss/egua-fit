@@ -1,12 +1,13 @@
 # Égua Fit
 
-Plataforma de montagem de treino e acompanhamento de desempenho para alunos.
+Painel interno para personal trainer: cadastro de alunos, montagem de treino e dashboard de desempenho.
 
 ## Telas
 
-- **Meu Treino** (`/`) — área do aluno: dados, programação e gráficos de desempenho
-- **Evolução Física** (`/evolucao`) — cardio, abdominais, prancha e gráficos de evolução
-- **Montar Treino** (`/dashboard`) — dashboard do professor para montar e editar o treino
+- **Alunos** (`/`) — lista e cadastro dos alunos
+- **Dashboard** (`/aluno/:id`) — desempenho com cards, gráficos e frequência
+- **Montar treino** (`/aluno/:id/treino`) — programação e parâmetros
+- **Evolução física** (`/aluno/:id/evolucao`) — cardio / core
 
 ## Como rodar
 
@@ -15,11 +16,6 @@ npm install
 npm run dev
 ```
 
-Abra o endereço mostrado no terminal (geralmente `http://localhost:5173`).
-
 ## Stack
 
-- React + TypeScript (Vite)
-- Tailwind CSS v4
-- React Router
-- Recharts
+React + TypeScript (Vite) · Tailwind CSS v4 · Recharts · React Router
