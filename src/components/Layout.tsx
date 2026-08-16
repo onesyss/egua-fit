@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Activity, Users, X, UsersRound } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 import { useGym } from '../context/DataContext'
@@ -16,17 +16,23 @@ export function Layout() {
           className={`mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:px-6 ${dualWide ? 'max-w-[1600px]' : 'max-w-7xl'}`}
         >
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#b33a3a] text-white shadow-sm">
-              <Activity className="h-[18px] w-[18px]" strokeWidth={2.5} />
-            </div>
-            <div className="hidden sm:block">
-              <p className="font-display text-lg font-bold tracking-[0.06em] text-brand-800 uppercase dark:text-brand-200">
-                EquaFit
-              </p>
-              <p className="font-mono text-[10px] tracking-[0.14em] text-ink-muted uppercase">
-                personal trainer
-              </p>
-            </div>
+            <Link
+              to="/"
+              className="flex min-w-0 items-center gap-3 rounded-lg outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand-400"
+              aria-label="EquaFit — voltar para alunos"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#b33a3a] text-white shadow-sm">
+                <Activity className="h-[18px] w-[18px]" strokeWidth={2.5} />
+              </div>
+              <div className="hidden sm:block">
+                <p className="font-display text-lg font-bold tracking-[0.06em] text-brand-800 uppercase dark:text-brand-200">
+                  EquaFit
+                </p>
+                <p className="font-mono text-[10px] tracking-[0.14em] text-ink-muted uppercase">
+                  personal trainer
+                </p>
+              </div>
+            </Link>
 
             {pinned.length > 0 && (
               <div className="ml-1 flex min-w-0 items-center gap-1 overflow-x-auto">
