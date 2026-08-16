@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
+  ClipboardList,
   Pencil,
   Plus,
   Save,
   Trash2,
+  Trophy,
   UserRound,
 } from 'lucide-react'
 import { useGym } from '../context/DataContext'
@@ -15,7 +17,16 @@ import {
   MuscleGroupFilter,
   type MuscleFilter,
 } from '../components/MuscleGroupFilter'
+import { ExerciseGuideModal } from '../components/ExerciseGuideModal'
 import { Panel, SectionTitle } from '../components/ui'
+import { SessionTimer } from '../components/SessionTimer'
+import { StudentName } from '../components/StudentIdentity'
+import { MusclesWorkedBars } from '../components/Charts'
+import {
+  exerciseVolumeKg,
+  isPrNow,
+  musclesWorked,
+} from '../lib/training'
 
 const emptyForm = {
   muscleGroup: 'Peito' as MuscleGroup,
@@ -38,6 +49,12 @@ export function TrainerDashboard() {
     updateStudent,
     updatePhysical,
     updateMetricsMeta,
+    saveWorkout,
+    startSession,
+    pauseSession,
+    resetSession,
+    startWork,
+    pauseWork,
   } = useGym()
 
   const record = students.find((s) => s.student.id === studentId)
@@ -50,6 +67,10 @@ export function TrainerDashboard() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')
   const [flashMsg, setFlashMsg] = useState<string | null>(null)
+  const [guideExercise, setGuideExercise] = useState<{
+    name: string
+    muscleGroup: string
+  } | null>(null)
 
   const [studentForm, setStudentForm] = useState({
     name: '',
@@ -180,6 +201,14 @@ export function TrainerDashboard() {
 
   return (
     <div className="space-y-6">
+      {guideExercise && (
+        <ExerciseGuideModal
+          exerciseName={guideExercise.name}
+          muscleGroup={guideExercise.muscleGroup}
+          onClose={() => setGuideExercise(null)}
+        />
+      )}
+
       <section className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-start gap-3">
           <Link
@@ -193,12 +222,14 @@ export function TrainerDashboard() {
             <p className="tech-label text-brand-600 dark:text-brand-300">
               montar treino
             </p>
-            <h1 className="font-display text-3xl font-bold text-ink">
-              {record.student.name}
-            </h1>
+            <StudentName
+              student={record.student}
+              as="h1"
+              className="font-display text-3xl font-bold"
+            />
             <p className="mt-1 text-sm text-ink-muted">
               Matrícula {formatDate(record.student.enrollmentDate)} ·{' '}
-              {record.exercises.length} exercícios · carga{' '}
+              {record.exercises.length} exercícios · carga levantada{' '}
               {record.metrics.totalLoad.toLocaleString('pt-BR')} kg
             </p>
           </div>
@@ -209,6 +240,44 @@ export function TrainerDashboard() {
           </div>
         )}
       </section>
+
+      <Panel>
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <SectionTitle
+            title="Sessão de treino"
+            subtitle="Tempo total e tempo de trabalho (séries)"
+          />
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Link
+              to={`/aluno/${sid}/protocolo`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-brand-100 px-3 py-2 text-sm font-semibold text-brand-700 dark:border-slate-700 dark:text-brand-200"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Protocolo
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                saveWorkout(sid)
+                flash('Treino salvo no histórico')
+              }}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#2c4566] px-4 py-2 text-sm font-semibold text-white"
+            >
+              <Save className="h-4 w-4" />
+              Salvar treino
+            </button>
+          </div>
+        </div>
+        <SessionTimer
+          clock={record.sessionClock}
+          exercises={record.exercises}
+          onStart={() => startSession(sid)}
+          onPause={() => pauseSession(sid)}
+          onReset={() => resetSession(sid)}
+          onStartWork={() => startWork(sid)}
+          onPauseWork={() => pauseWork(sid)}
+        />
+      </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel delay="delay-1">
@@ -603,6 +672,7 @@ export function TrainerDashboard() {
                 <th className="px-3 py-3 text-center font-mono">Realizadas</th>
                 <th className="px-3 py-3 text-center font-mono">Peso ant.</th>
                 <th className="px-3 py-3 text-center font-mono">Peso at.</th>
+                <th className="px-3 py-3 text-center font-mono">Vol. kg</th>
                 <th className="px-3 py-3 text-center font-mono">% ↑</th>
                 <th className="px-3 py-3 text-right font-mono">Ações</th>
               </tr>
@@ -610,6 +680,7 @@ export function TrainerDashboard() {
             <tbody>
               {filteredExercises.map((ex) => {
                 const inc = calcIncrease(ex.previousWeight, ex.currentWeight)
+                const pr = isPrNow(ex, record.personalRecords)
                 return (
                   <tr
                     key={ex.id}
@@ -620,7 +691,27 @@ export function TrainerDashboard() {
                         {ex.muscleGroup}
                       </span>
                     </td>
-                    <td className="px-3 py-3 font-medium">{ex.name}</td>
+                    <td className="px-3 py-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setGuideExercise({
+                            name: ex.name,
+                            muscleGroup: ex.muscleGroup,
+                          })
+                        }
+                        className="text-left font-medium text-brand-800 hover:text-[#b33a3a] hover:underline dark:text-brand-200"
+                        title="Ver como executar"
+                      >
+                        {ex.name}
+                      </button>
+                      {pr && (
+                        <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                          <Trophy className="h-3 w-3" />
+                          PR
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-3 text-center tabular-nums">
                       {ex.sets}
                     </td>
@@ -635,6 +726,11 @@ export function TrainerDashboard() {
                     </td>
                     <td className="px-3 py-3 text-center font-semibold tabular-nums">
                       {ex.currentWeight || '—'}
+                    </td>
+                    <td className="px-3 py-3 text-center tabular-nums">
+                      {exerciseVolumeKg(ex) > 0
+                        ? Math.round(exerciseVolumeKg(ex)).toLocaleString('pt-BR')
+                        : '—'}
                     </td>
                     <td className="px-3 py-3 text-center">
                       <span
@@ -675,7 +771,7 @@ export function TrainerDashboard() {
               {filteredExercises.length === 0 && (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="px-3 py-10 text-center text-ink-muted"
                   >
                     Nenhum exercício neste filtro.
@@ -686,6 +782,18 @@ export function TrainerDashboard() {
           </table>
         </div>
       </Panel>
+
+      {record.exercises.length > 0 && (
+        <Panel>
+          <SectionTitle
+            title="Músculos trabalhados"
+            subtitle="Volume por grupo no programa atual"
+          />
+          <div className="h-[240px]">
+            <MusclesWorkedBars data={musclesWorked(record.exercises)} />
+          </div>
+        </Panel>
+      )}
     </div>
   )
 }

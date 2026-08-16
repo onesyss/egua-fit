@@ -6,7 +6,16 @@ import type {
   EvolutionSeries,
   StudentRecord,
   Student,
+  WorkoutSession,
 } from '../types'
+import {
+  calcIncrease,
+  emptyAnamnesis,
+  emptyClock,
+  exerciseVolumeKg,
+  STUDENT_COLORS,
+} from '../lib/training'
+import { emptyAssessment } from '../lib/assessment'
 
 export const muscleGroups: MuscleGroup[] = [
   'Peito',
@@ -20,10 +29,7 @@ export const muscleGroups: MuscleGroup[] = [
   'Cardio',
 ]
 
-export function calcIncrease(previous: number, current: number): number {
-  if (previous === 0) return current > 0 ? 100 : 0
-  return Number((((current - previous) / previous) * 100).toFixed(1))
-}
+export { calcIncrease } from '../lib/training'
 
 export function formatDate(iso: string): string {
   const d = new Date(iso + 'T12:00:00')
@@ -247,13 +253,22 @@ const carlosExercises: Exercise[] = [
 ]
 
 function makeStudent(
-  base: Omit<Student, 'avatarInitials'> & { avatarInitials?: string },
+  base: Omit<Student, 'avatarInitials' | 'color'> & {
+    avatarInitials?: string
+    color?: string
+  },
   exercises: Exercise[],
-  extras?: Partial<Pick<StudentRecord, 'physical' | 'evolution' | 'metrics'>>,
+  extras?: Partial<
+    Pick<
+      StudentRecord,
+      'physical' | 'evolution' | 'metrics' | 'history' | 'anamnesis' | 'assessment'
+    >
+  >,
 ): StudentRecord {
   const student: Student = {
     ...base,
     avatarInitials: base.avatarInitials ?? initials(base.name),
+    color: base.color ?? STUDENT_COLORS[0],
   }
   const metrics =
     extras?.metrics ??
@@ -268,7 +283,49 @@ function makeStudent(
     },
     physical: extras?.physical ?? { ...defaultPhysical },
     evolution: extras?.evolution ?? structuredClone(defaultEvolution),
+    history: extras?.history ?? [],
+    personalRecords: exercises
+      .filter((e) => e.previousWeight > 0)
+      .map((e) => ({
+        exerciseName: e.name,
+        weight: e.previousWeight,
+        volumeKg: e.previousWeight * e.sets * e.repsDone,
+        date: base.enrollmentDate,
+      })),
+    anamnesis: extras?.anamnesis ?? emptyAnamnesis(),
+    assessment: extras?.assessment ?? emptyAssessment(),
+    sessionClock: emptyClock(),
   }
+}
+
+function sampleHistory(exercises: Exercise[], volumes: number[]): WorkoutSession[] {
+  return volumes.map((volumeKg, i) => {
+    const prev = i === 0 ? volumeKg : volumes[i - 1]
+    const change = prev === 0 ? 0 : Number((((volumeKg - prev) / prev) * 100).toFixed(1))
+    const day = new Date('2026-06-01T12:00:00.000Z')
+    day.setDate(day.getDate() + i * 7)
+    return {
+      id: `hist-${exercises[0]?.id ?? 'x'}-${i}`,
+      date: day.toISOString(),
+      volumeKg,
+      volumeChangePercent: i === 0 ? 0 : change,
+      sessionDurationSec: 3600 + i * 120,
+      workDurationSec: 1100 + i * 40,
+      exercises: exercises.map((e) => ({
+        exerciseId: e.id,
+        name: e.name,
+        muscleGroup: e.muscleGroup,
+        sets: e.sets,
+        reps: e.reps,
+        repsDone: e.repsDone,
+        weight: e.currentWeight,
+        volumeKg: exerciseVolumeKg(e),
+        previousWeight: e.previousWeight,
+        increasePercent: 0,
+        isPr: false,
+      })),
+    }
+  })
 }
 
 export function emptyStudentRecord(name = 'Novo aluno'): StudentRecord {
@@ -303,6 +360,7 @@ export const initialStudents: StudentRecord[] = [
       phone: '11999998888',
       enrollmentDate: '2025-11-12',
       daysAccompanied: 142,
+      color: STUDENT_COLORS[1],
     },
     anaExercises,
     {
@@ -340,6 +398,59 @@ export const initialStudents: StudentRecord[] = [
           { label: 'S6', planned: 61, done: 58 },
         ],
       },
+      history: sampleHistory(anaExercises, [2100, 2280, 2410, 2550, 2680]),
+      anamnesis: {
+        ...emptyAnamnesis(),
+        goal: 'Hipertrofia e condicionamento',
+        experience: 'intermediario',
+        sleepHours: 7,
+        stress: 4,
+        occupation: 'Analista',
+        weightKg: 62,
+        heightCm: 165,
+        availabilityPerWeek: 4,
+        updatedAt: '2026-07-01T12:00:00.000Z',
+        trainingFocus: 'Hipertrofia de peito/tríceps com base de força',
+        weeklyStructure: 'A superior push · B posterior · C pernas · D cardio leve',
+        methods: 'Pirâmide crescente e rest-pause no último set',
+        progression: 'Aumentar 2,5 kg quando completar todas as reps',
+      },
+      assessment: {
+        ...emptyAssessment(),
+        parQ: {
+          ...emptyAssessment().parQ,
+          q1Heart: 'nao',
+          q2ChestPainActivity: 'nao',
+          q3ChestPainRest: 'nao',
+          q4Dizziness: 'nao',
+          q5BoneJoint: 'nao',
+          q6Medication: 'nao',
+          q7Other: 'nao',
+        },
+        deepSquat: {
+          classification: 'leves',
+          notes: 'Valgo leve no joelho esquerdo no fundo do agachamento',
+        },
+        simpleMovements: {
+          classification: 'normal',
+          notes: 'Marcha e hinging sem restrição',
+        },
+        shoulderFlexion: { left: 'normal', right: 'leves', notes: 'D limitado no fim de amplitude' },
+        shoulderRotation: { left: 'normal', right: 'normal', notes: '' },
+        shoulderExtension: { left: 'normal', right: 'normal', notes: '' },
+        kneeToWallLeftCm: 9,
+        kneeToWallRightCm: 11,
+        activeLegRaise: { left: 'leves', right: 'normal', notes: 'Isquiotibiais E mais tensos' },
+        unipedalLeftSec: 18,
+        unipedalRightSec: 24,
+        unipedalNotes: 'Oscilação no lado esquerdo após 15s',
+        maxPushUps: 18,
+        plankMax: '01:42',
+        hipIsometric: '00:48',
+        run1km: '04:52',
+        hiitInterval: '8x 200 m / 60 s descanso · FC média 165',
+        updatedAt: '2026-07-01T12:00:00.000Z',
+      },
     },
   ),
   makeStudent(
@@ -350,6 +461,7 @@ export const initialStudents: StudentRecord[] = [
       phone: '11988887777',
       enrollmentDate: '2026-01-08',
       daysAccompanied: 88,
+      color: STUDENT_COLORS[0],
     },
     carlosExercises,
     {
@@ -358,6 +470,7 @@ export const initialStudents: StudentRecord[] = [
         energyLevel: 7,
         frequency: 3,
       },
+      history: sampleHistory(carlosExercises, [3800, 4100, 4350, 4520]),
     },
   ),
 ]

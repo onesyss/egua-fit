@@ -6,6 +6,9 @@ import { StudentsPanel } from './pages/StudentsPanel'
 import { PerformanceDashboard } from './pages/PerformanceDashboard'
 import { PhysicalEvolution } from './pages/PhysicalEvolution'
 import { TrainerDashboard } from './pages/TrainerDashboard'
+import { ProtocolPage } from './pages/ProtocolPage'
+import { ReportPage } from './pages/ReportPage'
+import { DualSession } from './pages/DualSession'
 
 export default function App() {
   return (
@@ -15,6 +18,7 @@ export default function App() {
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<StudentsPanel />} />
+              <Route path="dupla" element={<DualSession />} />
               <Route path="aluno/:studentId" element={<PerformanceDashboard />} />
               <Route
                 path="aluno/:studentId/treino"
@@ -23,6 +27,14 @@ export default function App() {
               <Route
                 path="aluno/:studentId/evolucao"
                 element={<PhysicalEvolution />}
+              />
+              <Route
+                path="aluno/:studentId/protocolo"
+                element={<ProtocolPage />}
+              />
+              <Route
+                path="aluno/:studentId/relatorio"
+                element={<ReportPage />}
               />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

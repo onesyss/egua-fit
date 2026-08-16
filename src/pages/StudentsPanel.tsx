@@ -3,17 +3,21 @@ import { Link } from 'react-router-dom'
 import {
   CalendarDays,
   ChevronRight,
+  Pin,
   Plus,
   Search,
   Trash2,
   Users,
+  UsersRound,
 } from 'lucide-react'
 import { useGym } from '../context/DataContext'
 import { energyLabel, formatDate } from '../data/mock'
 import { Panel, SectionTitle } from '../components/ui'
+import { StudentName } from '../components/StudentIdentity'
 
 export function StudentsPanel() {
-  const { students, createStudent, removeStudent, setActiveId } = useGym()
+  const { students, createStudent, removeStudent, setActiveId, pinStudent, pinnedIds } =
+    useGym()
   const [query, setQuery] = useState('')
   const [openForm, setOpenForm] = useState(false)
   const [form, setForm] = useState({
@@ -74,14 +78,25 @@ export function StudentsPanel() {
             painel interno.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpenForm((v) => !v)}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2c4566] to-[#b33a3a] px-4 py-2.5 text-sm font-bold text-white shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          Novo aluno
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {pinnedIds.length === 2 && (
+            <Link
+              to="/dupla"
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 px-4 py-2.5 text-sm font-bold text-brand-800 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
+            >
+              <UsersRound className="h-4 w-4" />
+              Atendimento em dupla
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpenForm((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2c4566] to-[#b33a3a] px-4 py-2.5 text-sm font-bold text-white shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Novo aluno
+          </button>
+        </div>
       </section>
 
       {openForm && (
@@ -180,16 +195,22 @@ export function StudentsPanel() {
           <div
             key={s.student.id}
             className={`tech-panel animate-fade-up delay-${Math.min(i + 1, 4)} p-4 sm:p-5`}
+            style={{ borderLeft: `4px solid ${s.student.color}` }}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2c4566] to-[#b33a3a] font-mono text-sm font-bold text-white">
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-xl font-mono text-sm font-bold text-white"
+                  style={{ backgroundColor: s.student.color }}
+                >
                   {s.student.avatarInitials}
                 </div>
                 <div>
-                  <h2 className="font-display text-lg font-bold text-ink">
-                    {s.student.name}
-                  </h2>
+                  <StudentName
+                    student={s.student}
+                    as="h2"
+                    className="font-display text-lg font-bold"
+                  />
                   <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
                     <CalendarDays className="h-3 w-3" />
                     {formatDate(s.student.enrollmentDate)} ·{' '}
@@ -197,25 +218,37 @@ export function StudentsPanel() {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (
-                    confirm(`Remover ${s.student.name} do painel?`)
-                  ) {
-                    removeStudent(s.student.id)
-                  }
-                }}
-                className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-danger dark:hover:bg-red-950/30"
-                title="Remover"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => pinStudent(s.student.id)}
+                  className={`rounded-lg p-2 ${
+                    pinnedIds.includes(s.student.id)
+                      ? 'text-brand-700'
+                      : 'text-ink-muted hover:bg-brand-50 dark:hover:bg-slate-800'
+                  }`}
+                  title="Fixar na dupla"
+                >
+                  <Pin className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`Remover ${s.student.name} do painel?`)) {
+                      removeStudent(s.student.id)
+                    }
+                  }}
+                  className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-danger dark:hover:bg-red-950/30"
+                  title="Remover"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-lg bg-brand-50/80 px-2 py-2 dark:bg-slate-900">
-                <p className="tech-label !text-[9px]">Carga</p>
+                <p className="tech-label !text-[9px]">Carga (kg)</p>
                 <p className="font-mono text-sm font-bold text-ink">
                   {s.metrics.totalLoad.toLocaleString('pt-BR')}
                 </p>
@@ -237,7 +270,8 @@ export function StudentsPanel() {
             <Link
               to={`/aluno/${s.student.id}`}
               onClick={() => setActiveId(s.student.id)}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2c4566] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#233650]"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-white transition"
+              style={{ backgroundColor: s.student.color }}
             >
               Acessar dashboard
               <ChevronRight className="h-4 w-4" />

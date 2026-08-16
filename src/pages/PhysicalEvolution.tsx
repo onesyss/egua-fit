@@ -8,6 +8,7 @@ import {
   RunningChart,
 } from '../components/Charts'
 import { MetricCard, Panel, SectionTitle } from '../components/ui'
+import { StudentName } from '../components/StudentIdentity'
 
 export function PhysicalEvolution() {
   const { studentId } = useParams()
@@ -36,9 +37,11 @@ export function PhysicalEvolution() {
           <p className="tech-label text-brand-600 dark:text-brand-300">
             evolução física
           </p>
-          <h1 className="font-display text-3xl font-bold text-ink">
-            {student.name}
-          </h1>
+          <StudentName
+            student={student}
+            as="h1"
+            className="font-display text-3xl font-bold"
+          />
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
   Line,
   LineChart,
   Tooltip,
@@ -13,7 +14,7 @@ import {
   YAxis,
   Legend,
 } from 'recharts'
-import type { ChartPoint, Exercise, RepsSessionPoint } from '../types'
+import type { ChartPoint, Exercise, MuscleGroup, RepsSessionPoint } from '../types'
 import { useTheme } from '../context/ThemeContext'
 
 function useChartTheme() {
@@ -254,6 +255,136 @@ export function PlankAreaChart({ data }: { data: ChartPoint[] }) {
         <Tooltip contentStyle={t.tooltip} />
         <Line type="monotone" dataKey="value" name="Prancha" stroke={t.blue} strokeWidth={2.5} />
       </LineChart>
+    </ResponsiveContainer>
+  )
+}
+
+export function VolumeHistoryChart({
+  data,
+}: {
+  data: { label: string; volume: number; change: number }[]
+}) {
+  const t = useChartTheme()
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 4 }}>
+        <CartesianGrid strokeDasharray="3 6" stroke={t.grid} vertical={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fill: t.tick, fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          yAxisId="kg"
+          tick={{ fill: t.tick, fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          width={42}
+        />
+        <YAxis
+          yAxisId="pct"
+          orientation="right"
+          tick={{ fill: t.tick, fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          width={36}
+          tickFormatter={(v) => `${v}%`}
+        />
+        <Tooltip
+          contentStyle={t.tooltip}
+          formatter={(value, name) => {
+            const n = Number(value)
+            if (name === 'Variação %') return [`${n > 0 ? '+' : ''}${n}%`, name]
+            return [`${n.toLocaleString('pt-BR')} kg`, 'Carga']
+          }}
+        />
+        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Bar
+          yAxisId="pct"
+          dataKey="change"
+          name="Variação %"
+          fill={t.muted}
+          radius={[3, 3, 0, 0]}
+          maxBarSize={28}
+        />
+        <Line
+          yAxisId="kg"
+          type="monotone"
+          dataKey="volume"
+          name="Carga (kg)"
+          stroke={t.red}
+          strokeWidth={2.5}
+          dot={{ r: 3, fill: t.red, strokeWidth: 0 }}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  )
+}
+
+const MUSCLE_COLORS: Record<MuscleGroup, string> = {
+  Peito: '#b33a3a',
+  Costas: '#2c4566',
+  Ombros: '#b45309',
+  Bíceps: '#6d28d9',
+  Tríceps: '#9f1239',
+  Pernas: '#166534',
+  Glúteos: '#854d0e',
+  Abdômen: '#0f766e',
+  Cardio: '#1d4ed8',
+}
+
+export function MusclesWorkedBars({
+  data,
+}: {
+  data: { group: MuscleGroup; volumeKg: number; sets: number }[]
+}) {
+  const t = useChartTheme()
+  const rows = data.map((d) => ({
+    name: d.group,
+    volume: Math.round(d.volumeKg * 10) / 10,
+    sets: d.sets,
+  }))
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart
+        data={rows}
+        layout="vertical"
+        margin={{ top: 8, right: 16, left: 8, bottom: 4 }}
+      >
+        <CartesianGrid strokeDasharray="3 6" stroke={t.grid} horizontal={false} />
+        <XAxis
+          type="number"
+          tick={{ fill: t.tick, fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          type="category"
+          dataKey="name"
+          tick={{ fill: t.tick, fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          width={72}
+        />
+        <Tooltip
+          contentStyle={t.tooltip}
+          formatter={(value, name) =>
+            name === 'sets'
+              ? [value, 'Séries']
+              : [`${Number(value).toLocaleString('pt-BR')} kg`, 'Volume']
+          }
+        />
+        <Bar dataKey="volume" name="Volume (kg)" radius={[0, 4, 4, 0]}>
+          {rows.map((row) => (
+            <Cell
+              key={row.name}
+              fill={MUSCLE_COLORS[row.name as MuscleGroup] ?? t.blue}
+            />
+          ))}
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   )
 }

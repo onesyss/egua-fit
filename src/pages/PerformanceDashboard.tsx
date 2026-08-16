@@ -7,6 +7,8 @@ import {
   Flame,
   Layers,
   Percent,
+  Play,
+  Trophy,
   Weight,
 } from 'lucide-react'
 import { useGym } from '../context/DataContext'
@@ -14,12 +16,23 @@ import { calcIncrease, energyLabel, formatDate } from '../data/mock'
 import {
   ExerciseCompareBars,
   FrequencyDonut,
+  MusclesWorkedBars,
   PerformanceRepsChart,
+  VolumeHistoryChart,
 } from '../components/Charts'
 import {
   MuscleGroupFilter,
   type MuscleFilter,
 } from '../components/MuscleGroupFilter'
+import { ExerciseGuideModal } from '../components/ExerciseGuideModal'
+import { StudentName } from '../components/StudentIdentity'
+import {
+  exerciseVolumeKg,
+  formatDuration,
+  historyVolumePoints,
+  isPrNow,
+  musclesWorked,
+} from '../lib/training'
 
 function StatCard({
   title,
@@ -48,6 +61,10 @@ export function PerformanceDashboard() {
   const { students, setActiveId } = useGym()
   const record = students.find((s) => s.student.id === studentId)
   const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')
+  const [guideExercise, setGuideExercise] = useState<{
+    name: string
+    muscleGroup: string
+  } | null>(null)
 
   useEffect(() => {
     if (studentId) setActiveId(studentId)
@@ -61,11 +78,22 @@ export function PerformanceDashboard() {
 
   if (!record) return <Navigate to="/" replace />
 
-  const { student, exercises, metrics, evolution } = record
+  const { student, exercises, metrics, evolution, history, personalRecords } =
+    record
   const freqPercent = Math.min(Math.round((metrics.frequency / 5) * 100), 100)
+  const volumePoints = historyVolumePoints(history)
+  const muscles = musclesWorked(exercises)
 
   return (
     <div className="space-y-5">
+      {guideExercise && (
+        <ExerciseGuideModal
+          exerciseName={guideExercise.name}
+          muscleGroup={guideExercise.muscleGroup}
+          onClose={() => setGuideExercise(null)}
+        />
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
@@ -79,9 +107,11 @@ export function PerformanceDashboard() {
             <p className="tech-label text-brand-600 dark:text-brand-300">
               dashboard de desempenho
             </p>
-            <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">
-              {student.name}
-            </h1>
+            <StudentName
+              student={student}
+              as="h1"
+              className="font-display text-2xl font-bold sm:text-3xl"
+            />
             <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-ink-muted">
               <span className="inline-flex items-center gap-1">
                 <CalendarDays className="h-3.5 w-3.5" />
@@ -97,6 +127,12 @@ export function PerformanceDashboard() {
             className="rounded-xl bg-[#2c4566] px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#233650]"
           >
             Montar / editar treino
+          </Link>
+          <Link
+            to={`/aluno/${student.id}/protocolo`}
+            className="rounded-xl border border-brand-100 px-3.5 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
+          >
+            Protocolo
           </Link>
           <Link
             to={`/aluno/${student.id}/evolucao`}
@@ -161,6 +197,9 @@ export function PerformanceDashboard() {
                   Peso atual
                 </th>
                 <th className="px-3 py-3 text-center font-mono font-semibold">
+                  Volume (kg)
+                </th>
+                <th className="px-3 py-3 text-center font-mono font-semibold">
                   % Aumento
                 </th>
               </tr>
@@ -172,6 +211,8 @@ export function PerformanceDashboard() {
                   ex.currentWeight,
                 )
                 const doneWell = ex.repsDone >= ex.reps
+                const pr = isPrNow(ex, personalRecords)
+                const vol = exerciseVolumeKg(ex)
                 return (
                   <tr
                     key={ex.id}
@@ -182,7 +223,28 @@ export function PerformanceDashboard() {
                         {ex.muscleGroup}
                       </span>
                     </td>
-                    <td className="px-3 py-3 font-medium text-ink">{ex.name}</td>
+                    <td className="px-3 py-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setGuideExercise({
+                            name: ex.name,
+                            muscleGroup: ex.muscleGroup,
+                          })
+                        }
+                        className="group inline-flex max-w-full items-center gap-1.5 text-left font-medium text-brand-800 transition hover:text-[#b33a3a] hover:underline dark:text-brand-200"
+                        title="Ver como executar"
+                      >
+                        <span className="truncate">{ex.name}</span>
+                        {pr && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                            <Trophy className="h-3 w-3" />
+                            PR
+                          </span>
+                        )}
+                        <Play className="h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100" />
+                      </button>
+                    </td>
                     <td className="px-3 py-3 text-center tabular-nums">
                       {ex.sets}
                     </td>
@@ -207,6 +269,9 @@ export function PerformanceDashboard() {
                     <td className="px-3 py-3 text-center font-semibold tabular-nums text-brand-800 dark:text-brand-200">
                       {ex.currentWeight > 0 ? `${ex.currentWeight} kg` : '—'}
                     </td>
+                    <td className="px-3 py-3 text-center tabular-nums">
+                      {vol > 0 ? vol.toLocaleString('pt-BR') : '—'}
+                    </td>
                     <td className="px-3 py-3 text-center">
                       <span
                         className={[
@@ -228,7 +293,7 @@ export function PerformanceDashboard() {
               {filteredExercises.length === 0 && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-3 py-12 text-center text-ink-muted"
                   >
                     {exercises.length === 0 ? (
@@ -257,7 +322,7 @@ export function PerformanceDashboard() {
         <div className="grid gap-4 lg:col-span-8">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard
-              title="Total Carga"
+              title="Carga levantada"
               value={metrics.totalLoad.toLocaleString('pt-BR', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2,
@@ -312,6 +377,44 @@ export function PerformanceDashboard() {
           </div>
         </div>
 
+        <div className="grid gap-4 lg:col-span-7">
+          <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
+            <h2 className="mb-1 font-display text-lg font-bold text-ink">
+              Histórico de carga levantada
+            </h2>
+            <p className="mb-2 text-xs text-ink-muted">
+              Volume em kg e variação percentual entre treinos salvos
+            </p>
+            <div className="h-[260px]">
+              {volumePoints.length > 0 ? (
+                <VolumeHistoryChart data={volumePoints} />
+              ) : (
+                <p className="flex h-full items-center justify-center text-sm text-ink-muted">
+                  Salve um treino para ver o histórico.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 lg:col-span-5">
+          <h2 className="mb-1 font-display text-lg font-bold text-ink">
+            Músculos trabalhados
+          </h2>
+          <p className="mb-2 text-xs text-ink-muted">
+            Volume por grupo muscular no programa atual
+          </p>
+          <div className="h-[260px]">
+            {muscles.length > 0 ? (
+              <MusclesWorkedBars data={muscles} />
+            ) : (
+              <p className="flex h-full items-center justify-center text-sm text-ink-muted">
+                Sem exercícios no programa.
+              </p>
+            )}
+          </div>
+        </div>
+
         <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 lg:col-span-12">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Layers className="h-4 w-4 text-ink-muted" />
@@ -337,11 +440,71 @@ export function PerformanceDashboard() {
           </div>
         </div>
 
+        {history.length > 0 && (
+          <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 lg:col-span-12">
+            <h2 className="mb-3 font-display text-lg font-bold text-ink">
+              Treinos passados
+            </h2>
+            <div className="table-scroll overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead>
+                  <tr className="border-b text-[10px] tracking-wider text-ink-muted uppercase">
+                    <th className="px-2 py-2">Data</th>
+                    <th className="px-2 py-2 text-right">Carga (kg)</th>
+                    <th className="px-2 py-2 text-right">Variação</th>
+                    <th className="px-2 py-2 text-right">Sessão</th>
+                    <th className="px-2 py-2 text-right">Trabalho</th>
+                    <th className="px-2 py-2 text-center">PRs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...history].reverse().map((s) => (
+                    <tr
+                      key={s.id}
+                      className="border-b border-slate-50 dark:border-slate-800"
+                    >
+                      <td className="px-2 py-2">
+                        {formatDate(s.date.slice(0, 10))}
+                      </td>
+                      <td className="px-2 py-2 text-right font-mono font-semibold tabular-nums">
+                        {s.volumeKg.toLocaleString('pt-BR')}
+                      </td>
+                      <td className="px-2 py-2 text-right">
+                        <span
+                          className={
+                            s.volumeChangePercent > 0
+                              ? 'font-bold text-emerald-600'
+                              : s.volumeChangePercent < 0
+                                ? 'text-red-500'
+                                : 'text-ink-muted'
+                          }
+                        >
+                          {s.volumeChangePercent > 0 ? '+' : ''}
+                          {s.volumeChangePercent}%
+                        </span>
+                      </td>
+                      <td className="px-2 py-2 text-right tabular-nums text-ink-muted">
+                        {formatDuration(s.sessionDurationSec)}
+                      </td>
+                      <td className="px-2 py-2 text-right tabular-nums text-ink-muted">
+                        {formatDuration(s.workDurationSec)}
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        {s.exercises.filter((e) => e.isPr).length || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-3 lg:col-span-12">
           <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/90">
             <Weight className="h-5 w-5 text-brand-600" />
             <div>
-              <p className="text-xs text-ink-muted">Carga total da sessão</p>
+              <p className="text-xs text-ink-muted">Carga levantada</p>
               <p className="font-mono font-bold text-ink">
                 {metrics.totalLoad.toLocaleString('pt-BR')} kg
               </p>
