@@ -5,7 +5,7 @@ import {
   parQRisk,
   PARQ_QUESTIONS,
 } from './assessment'
-import { bmi, formatDuration, musclesWorked, programVolumeKg } from './training'
+import { bmi, formatDuration, formatExerciseDose, musclesWorked, programVolumeKg } from './training'
 import { formatDate } from '../data/mock'
 
 const experienceLabel = {
@@ -126,8 +126,10 @@ export function buildReportMessage(record: StudentRecord, extraNote = ''): strin
     parts.push(
       ...exercises.map(
         (e) =>
-          `- ${e.name} (${e.muscleGroup}): ${e.sets}x${e.repsDone}/${e.reps}${
-            e.currentWeight > 0 ? ` @ ${e.currentWeight}kg` : ''
+          `- ${e.name} (${e.muscleGroup}): ${formatExerciseDose(e)}${
+            e.muscleGroup !== 'Cardio' && e.currentWeight > 0
+              ? ` @ ${e.currentWeight}kg`
+              : ''
           }`,
       ),
     )

@@ -18,6 +18,10 @@ export interface Exercise {
   repsDone: number
   previousWeight: number
   currentWeight: number
+  /** Cardio: duração em minutos */
+  durationMin?: number
+  /** Esteira: inclinação em % */
+  incline?: number
 }
 
 export interface Student {

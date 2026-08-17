@@ -70,6 +70,7 @@ export function emptyClock(): SessionClock {
 }
 
 export function exerciseVolumeKg(ex: Exercise): number {
+  if (ex.muscleGroup === 'Cardio') return 0
   return ex.currentWeight * ex.sets * ex.repsDone
 }
 
@@ -79,7 +80,33 @@ export function programVolumeKg(exercises: Exercise[]): number {
 
 /** Tempo de trabalho estimado: ~2.5s de tensão por repetição realizada */
 export function estimatedWorkSec(exercises: Exercise[]): number {
-  return exercises.reduce((acc, e) => acc + e.sets * e.repsDone * 2.5, 0)
+  return exercises.reduce((acc, e) => {
+    if (e.muscleGroup === 'Cardio') {
+      return acc + cardioMinutes(e) * 60
+    }
+    return acc + e.sets * e.repsDone * 2.5
+  }, 0)
+}
+
+export function isTreadmillName(name: string): boolean {
+  return /esteira|treadmill/i.test(name.trim())
+}
+
+export function cardioMinutes(ex: Pick<Exercise, 'muscleGroup' | 'durationMin' | 'sets'>): number {
+  if (ex.muscleGroup !== 'Cardio') return 0
+  if (ex.durationMin && ex.durationMin > 0) return ex.durationMin
+  return ex.sets > 0 ? ex.sets : 0
+}
+
+export function formatExerciseDose(ex: Exercise): string {
+  if (ex.muscleGroup === 'Cardio') {
+    const parts = [`${cardioMinutes(ex)} min`]
+    if (isTreadmillName(ex.name) && ex.incline != null) {
+      parts.push(`${ex.incline}% incl.`)
+    }
+    return parts.join(' · ')
+  }
+  return `${ex.sets}×${ex.reps}`
 }
 
 export function formatDuration(totalSec: number): string {

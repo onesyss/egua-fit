@@ -26,6 +26,9 @@ import {
   exerciseVolumeKg,
   isPrNow,
   musclesWorked,
+  cardioMinutes,
+  formatExerciseDose,
+  isTreadmillName,
 } from '../lib/training'
 
 const emptyForm = {
@@ -36,6 +39,8 @@ const emptyForm = {
   repsDone: 12,
   previousWeight: 0,
   currentWeight: 0,
+  durationMin: 20,
+  incline: 1,
 }
 
 export function TrainerDashboard() {
@@ -136,6 +141,8 @@ export function TrainerDashboard() {
       repsDone: ex.repsDone,
       previousWeight: ex.previousWeight,
       currentWeight: ex.currentWeight,
+      durationMin: cardioMinutes(ex) || 20,
+      incline: ex.incline ?? 1,
     })
   }
 
@@ -147,12 +154,36 @@ export function TrainerDashboard() {
   const onSubmitExercise = (e: FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) return
+    const payload =
+      form.muscleGroup === 'Cardio'
+        ? {
+            muscleGroup: form.muscleGroup,
+            name: form.name.trim(),
+            sets: 1,
+            reps: 0,
+            repsDone: 0,
+            previousWeight: 0,
+            currentWeight: 0,
+            durationMin: Number(form.durationMin) || 0,
+            incline: isTreadmillName(form.name) ? Number(form.incline) || 0 : undefined,
+          }
+        : {
+            muscleGroup: form.muscleGroup,
+            name: form.name.trim(),
+            sets: form.sets,
+            reps: form.reps,
+            repsDone: form.repsDone,
+            previousWeight: form.previousWeight,
+            currentWeight: form.currentWeight,
+            durationMin: undefined,
+            incline: undefined,
+          }
     if (editingId) {
-      updateExercise(editingId, form, sid)
+      updateExercise(editingId, payload, sid)
       flash('Exercício atualizado')
       cancelEdit()
     } else {
-      addExercise(form, sid)
+      addExercise(payload, sid)
       flash('Exercício adicionado')
       setForm(emptyForm)
     }
@@ -520,12 +551,19 @@ export function TrainerDashboard() {
             <select
               className={field}
               value={form.muscleGroup}
-              onChange={(e) =>
+              onChange={(e) => {
+                const muscleGroup = e.target.value as MuscleGroup
                 setForm((f) => ({
                   ...f,
-                  muscleGroup: e.target.value as MuscleGroup,
+                  muscleGroup,
+                  ...(muscleGroup === 'Cardio'
+                    ? {
+                        durationMin: f.durationMin || 20,
+                        incline: f.incline || 1,
+                      }
+                    : {}),
                 }))
-              }
+              }}
             >
               {muscleGroups.map((g) => (
                 <option key={g} value={g}>
@@ -542,9 +580,58 @@ export function TrainerDashboard() {
               className={field}
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder={
+                form.muscleGroup === 'Cardio'
+                  ? 'Ex.: Esteira, bike, elíptico'
+                  : undefined
+              }
               required
             />
           </label>
+          {form.muscleGroup === 'Cardio' ? (
+            <>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-ink-muted">
+                  Minutos
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  className={field}
+                  value={form.durationMin}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      durationMin: Number(e.target.value),
+                    }))
+                  }
+                />
+              </label>
+              {isTreadmillName(form.name) && (
+                <label className="block">
+                  <span className="mb-1 block text-xs font-semibold text-ink-muted">
+                    Inclinação (%)
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    step={0.5}
+                    className={field}
+                    value={form.incline}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        incline: Number(e.target.value),
+                      }))
+                    }
+                  />
+                </label>
+              )}
+            </>
+          ) : (
+            <>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-ink-muted">
               Séries
@@ -623,6 +710,8 @@ export function TrainerDashboard() {
               }
             />
           </label>
+            </>
+          )}
           <div className="flex items-end gap-2">
             <button
               type="submit"
@@ -667,7 +756,7 @@ export function TrainerDashboard() {
               <tr className="border-b border-brand-100 text-[10px] tracking-wider text-ink-muted uppercase dark:border-slate-800">
                 <th className="px-3 py-3 font-mono">Grupo</th>
                 <th className="px-3 py-3 font-mono">Exercício</th>
-                <th className="px-3 py-3 text-center font-mono">Séries</th>
+                <th className="px-3 py-3 text-center font-mono">Séries / min</th>
                 <th className="px-3 py-3 text-center font-mono">Reps</th>
                 <th className="px-3 py-3 text-center font-mono">Realizadas</th>
                 <th className="px-3 py-3 text-center font-mono">Peso ant.</th>
@@ -705,6 +794,13 @@ export function TrainerDashboard() {
                       >
                         {ex.name}
                       </button>
+                      {ex.muscleGroup === 'Cardio' &&
+                        isTreadmillName(ex.name) &&
+                        ex.incline != null && (
+                          <p className="mt-0.5 text-[11px] text-ink-muted">
+                            {ex.incline}% inclinação
+                          </p>
+                        )}
                       {pr && (
                         <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
                           <Trophy className="h-3 w-3" />
@@ -713,13 +809,15 @@ export function TrainerDashboard() {
                       )}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums">
-                      {ex.sets}
+                      {ex.muscleGroup === 'Cardio'
+                        ? `${cardioMinutes(ex)} min`
+                        : ex.sets}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums">
-                      {ex.reps}
+                      {ex.muscleGroup === 'Cardio' ? '—' : ex.reps}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums">
-                      {ex.repsDone}
+                      {ex.muscleGroup === 'Cardio' ? '—' : ex.repsDone}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums text-ink-muted">
                       {ex.previousWeight || '—'}

@@ -27,10 +27,12 @@ import {
 import { ExerciseGuideModal } from '../components/ExerciseGuideModal'
 import { StudentName } from '../components/StudentIdentity'
 import {
+  cardioMinutes,
   exerciseVolumeKg,
   formatDuration,
   historyVolumePoints,
   isPrNow,
+  isTreadmillName,
   musclesWorked,
 } from '../lib/training'
 import { dayGreeting } from '../lib/greeting'
@@ -183,7 +185,7 @@ export function PerformanceDashboard() {
                 </th>
                 <th className="px-3 py-3 font-mono font-semibold">Exercício</th>
                 <th className="px-3 py-3 text-center font-mono font-semibold">
-                  Séries
+                  Séries / min
                 </th>
                 <th className="px-3 py-3 text-center font-mono font-semibold">
                   Repetições
@@ -245,14 +247,26 @@ export function PerformanceDashboard() {
                         )}
                         <Play className="h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100" />
                       </button>
+                      {ex.muscleGroup === 'Cardio' &&
+                        isTreadmillName(ex.name) &&
+                        ex.incline != null && (
+                          <p className="mt-0.5 text-[11px] text-ink-muted">
+                            {ex.incline}% inclinação
+                          </p>
+                        )}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums">
-                      {ex.sets}
+                      {ex.muscleGroup === 'Cardio'
+                        ? `${cardioMinutes(ex)} min`
+                        : ex.sets}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums">
-                      {ex.reps}
+                      {ex.muscleGroup === 'Cardio' ? '—' : ex.reps}
                     </td>
                     <td className="px-3 py-3 text-center">
+                      {ex.muscleGroup === 'Cardio' ? (
+                        '—'
+                      ) : (
                       <span
                         className={[
                           'inline-flex min-w-[2rem] justify-center rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums',
@@ -263,6 +277,7 @@ export function PerformanceDashboard() {
                       >
                         {ex.repsDone}
                       </span>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums text-ink-muted">
                       {ex.previousWeight > 0 ? `${ex.previousWeight} kg` : '—'}

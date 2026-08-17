@@ -7,6 +7,7 @@ import {
   bmi,
   colorForStudent,
   formatDuration,
+  formatExerciseDose,
   musclesWorked,
   programVolumeKg,
 } from '../lib/training'
@@ -318,7 +319,7 @@ export function ReportPage() {
             <thead>
               <tr className="border-b text-[10px] tracking-wider text-ink-muted uppercase">
                 <th className="py-2">Exercício</th>
-                <th className="py-2 text-center">Séries</th>
+                <th className="py-2 text-center">Séries / min</th>
                 <th className="py-2 text-center">Reps</th>
                 <th className="py-2 text-right">Carga</th>
               </tr>
@@ -330,8 +331,12 @@ export function ReportPage() {
                     {e.name}{' '}
                     <span className="text-ink-muted">({e.muscleGroup})</span>
                   </td>
-                  <td className="py-1.5 text-center">{e.sets}</td>
-                  <td className="py-1.5 text-center">{e.repsDone}/{e.reps}</td>
+                  <td className="py-1.5 text-center">
+                    {e.muscleGroup === 'Cardio' ? formatExerciseDose(e) : e.sets}
+                  </td>
+                  <td className="py-1.5 text-center">
+                    {e.muscleGroup === 'Cardio' ? '—' : `${e.repsDone}/${e.reps}`}
+                  </td>
                   <td className="py-1.5 text-right tabular-nums">
                     {e.currentWeight > 0 ? `${e.currentWeight} kg` : '—'}
                   </td>
