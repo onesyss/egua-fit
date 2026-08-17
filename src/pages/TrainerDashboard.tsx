@@ -27,7 +27,6 @@ import {
   isPrNow,
   musclesWorked,
   cardioMinutes,
-  formatExerciseDose,
   isTreadmillName,
 } from '../lib/training'
 

@@ -94,8 +94,9 @@ export async function syncStudentRecords(
   if (!userId) throw new Error('Sessão inválida para salvar alunos')
 
   const scoped = await hasUserIdColumn()
-  let read = supabase.from('students').select(scoped ? 'id' : 'id, payload')
-  if (scoped) read = read.eq('user_id', userId)
+  const read = scoped
+    ? supabase.from('students').select('id').eq('user_id', userId)
+    : supabase.from('students').select('id, payload')
 
   const { data: existing, error: readError } = await read
   if (readError) throw readError
@@ -103,11 +104,13 @@ export async function syncStudentRecords(
   const keep = new Set(records.map((r) => r.student.id))
   const mine = (existing ?? []).filter((row) => {
     if (scoped) return true
-    const payload = row.payload as StudentRecord & { ownerId?: string } | undefined
+    const payload = 'payload' in row
+      ? (row.payload as StudentRecord & { ownerId?: string } | null)
+      : null
     return payload ? isOwnedBy(payload, userId) : false
   })
   const toDelete = mine
-    .map((row) => row.id as string)
+    .map((row) => row.id)
     .filter((id) => !keep.has(id))
 
   if (toDelete.length > 0) {
