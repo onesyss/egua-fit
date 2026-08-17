@@ -150,7 +150,7 @@ export function LoginPage() {
 
           {!configured && (
             <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
-              Configure o Supabase no .env.local para habilitar o login.
+              Login indisponível: o site no ar precisa das variáveis VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no deploy.
             </p>
           )}
 
