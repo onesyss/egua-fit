@@ -19,6 +19,21 @@ npm install
 npm run dev
 ```
 
+Abra http://localhost:5173/ — se já estiver logado, use **Sair** no topo para ver o login.
+
+## Produção
+
+O GitHub guarda o código; o site no ar é o GitHub Pages:
+
+**https://onesyss.github.io/egua-fit/**
+
+Na primeira vez: no repositório, **Settings → Pages → Source: GitHub Actions**. Em **Settings → Secrets and variables → Actions**, crie:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+(os mesmos valores do `.env.local`). Depois de cada push na `main`, o site atualiza sozinho.
+
 ## Supabase
 
 Este projeto é Vite (não Next). As variáveis no `.env.local` são:
