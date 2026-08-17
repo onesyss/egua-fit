@@ -1,12 +1,23 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Activity, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react'
+import {
+  Activity,
+  Dumbbell,
+  Eye,
+  EyeOff,
+  LineChart,
+  LogIn,
+  Mail,
+  Users,
+  UserPlus,
+  X,
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { dayGreeting } from '../lib/greeting'
 
 const fieldClass =
-  'w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-11 pl-3 text-sm text-ink outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-950'
+  'w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-11 pl-3 text-sm text-ink outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-950'
 
 function PasswordField({
   label,
@@ -65,6 +76,7 @@ export function LoginPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [verifyEmail, setVerifyEmail] = useState<string | null>(null)
 
   if (!loading && session) return <Navigate to="/" replace />
 
@@ -97,17 +109,25 @@ export function LoginPage() {
       if (mode === 'login') {
         await signIn(email.trim(), password)
       } else {
+        const createdEmail = email.trim()
         await signUp({
           name: name.trim(),
-          email: email.trim(),
+          email: createdEmail,
           password,
         })
+        setMode('login')
+        setPassword('')
+        setConfirmPassword('')
+        setShowConfirm(false)
+        setVerifyEmail(createdEmail)
       }
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : 'Não foi possível entrar'
       if (/invalid login/i.test(raw)) setError('E-mail ou senha inválidos.')
       else if (/already registered/i.test(raw))
         setError('Este e-mail já tem conta. Entre com a senha.')
+      else if (/email not confirmed|confirm/i.test(raw))
+        setError('Valide a conta no e-mail antes de entrar.')
       else setError(raw)
     } finally {
       setBusy(false)
@@ -115,14 +135,18 @@ export function LoginPage() {
   }
 
   const field =
-    'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-950'
+    'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-ink outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-950'
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="tech-header flex items-center justify-between px-4 py-3 sm:px-6">
+    <div className="relative flex min-h-screen flex-col overflow-hidden">
+      <div className="pointer-events-none absolute -top-28 -left-20 h-72 w-72 rounded-full bg-[#2c4566]/20 blur-3xl motion-safe:animate-pulse" />
+      <div className="pointer-events-none absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-[#b33a3a]/12 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 left-1/4 h-64 w-64 rounded-full bg-[#3d5a80]/15 blur-3xl motion-safe:animate-pulse" />
+
+      <header className="relative z-10 flex items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#b33a3a] text-white">
-            <Activity className="h-[18px] w-[18px]" strokeWidth={2.5} />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2c4566] to-[#b33a3a] text-white shadow-lg shadow-[#2c4566]/25">
+            <Activity className="h-5 w-5" strokeWidth={2.5} />
           </div>
           <div>
             <p className="font-display text-lg font-bold tracking-[0.06em] text-brand-800 uppercase dark:text-brand-200">
@@ -136,124 +160,227 @@ export function LoginPage() {
         <ThemeToggle />
       </header>
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10">
-        <div className="tech-panel p-6 sm:p-8">
+      <main className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-6 lg:grid-cols-2 lg:py-10">
+        <section className="animate-fade-up hidden lg:block">
           <p className="tech-label text-brand-600 dark:text-brand-300">
             {dayGreeting()}
           </p>
-          <h1 className="mt-1 font-display text-2xl font-bold text-ink">
-            {mode === 'login' ? 'Área do personal' : 'Cadastrar personal'}
+          <h1 className="mt-2 font-display text-5xl font-extrabold tracking-tight text-ink xl:text-6xl">
+            Seu painel.
+            <span className="mt-1 block bg-gradient-to-r from-[#2c4566] to-[#b33a3a] bg-clip-text text-transparent">
+              Seus alunos.
+            </span>
           </h1>
-          <p className="mt-2 text-sm text-ink-muted">
-            Cada professor vê só os próprios alunos.
+          <p className="mt-4 max-w-md text-lg text-ink-muted">
+            Monte treinos, acompanhe evolução e atenda em dupla — tudo no mesmo
+            lugar.
           </p>
+          <ul className="mt-8 space-y-3">
+            {[
+              { icon: Users, text: 'Cadastro e cores por aluno' },
+              { icon: Dumbbell, text: 'Programação de treino e cardio' },
+              { icon: LineChart, text: 'Volume, PRs e relatório' },
+            ].map(({ icon: Icon, text }) => (
+              <li
+                key={text}
+                className="flex items-center gap-3 text-sm font-semibold text-ink"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#3d5a80] text-white">
+                  <Icon className="h-4 w-4" />
+                </span>
+                {text}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          {!configured && (
-            <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
-              Login indisponível: o site no ar precisa das variáveis VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no deploy.
+        <section className="animate-fade-up mx-auto w-full max-w-md lg:mx-0 lg:justify-self-end">
+          <div className="mb-4 lg:hidden">
+            <p className="tech-label text-brand-600 dark:text-brand-300">
+              {dayGreeting()}
             </p>
-          )}
+            <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-ink">
+              {mode === 'login' ? 'Entrar' : 'Criar conta'}
+            </h1>
+          </div>
 
-          <form onSubmit={onSubmit} className="mt-6 space-y-3">
-            {mode === 'signup' && (
+          <div className="tech-panel overflow-hidden p-5 shadow-xl shadow-[#2c4566]/8 sm:p-8">
+            <div className="mb-5 grid grid-cols-2 rounded-xl bg-brand-50 p-1 dark:bg-slate-900">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login')
+                  setError(null)
+                }}
+                className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                  mode === 'login'
+                    ? 'bg-white text-brand-800 shadow-sm dark:bg-slate-800 dark:text-brand-200'
+                    : 'text-ink-muted'
+                }`}
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signup')
+                  setError(null)
+                }}
+                className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                  mode === 'signup'
+                    ? 'bg-white text-brand-800 shadow-sm dark:bg-slate-800 dark:text-brand-200'
+                    : 'text-ink-muted'
+                }`}
+              >
+                Criar conta
+              </button>
+            </div>
+
+            <h2 className="hidden font-display text-2xl font-bold text-ink lg:block">
+              {mode === 'login' ? 'Área do personal' : 'Cadastrar personal'}
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              {mode === 'login'
+                ? 'Acesse o painel com seu e-mail e senha.'
+                : 'Crie sua conta. Vamos enviar um link no e-mail para validar.'}
+            </p>
+
+            {!configured && (
+              <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                Login indisponível no momento. Tente de novo em instantes.
+              </p>
+            )}
+
+            <form onSubmit={onSubmit} className="mt-5 space-y-3">
+              {mode === 'signup' && (
+                <label className="block">
+                  <span className="mb-1 block text-xs font-semibold text-ink-muted">
+                    Nome
+                  </span>
+                  <input
+                    className={field}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Seu nome"
+                    autoComplete="name"
+                  />
+                </label>
+              )}
               <label className="block">
                 <span className="mb-1 block text-xs font-semibold text-ink-muted">
-                  Nome
+                  E-mail
                 </span>
                 <input
+                  type="email"
                   className={field}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Seu nome"
-                  autoComplete="name"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@email.com"
+                  autoComplete="email"
+                  required
                 />
               </label>
-            )}
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-ink-muted">
-                E-mail
-              </span>
-              <input
-                type="email"
-                className={field}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@email.com"
-                autoComplete="email"
-                required
+
+              <PasswordField
+                label="Senha"
+                value={password}
+                onChange={setPassword}
+                placeholder="Mínimo 6 caracteres"
+                autoComplete={
+                  mode === 'login' ? 'current-password' : 'new-password'
+                }
+                show={showPassword}
+                onToggleShow={() => setShowPassword((v) => !v)}
               />
-            </label>
 
-            <PasswordField
-              label="Senha"
-              value={password}
-              onChange={setPassword}
-              placeholder="Mínimo 6 caracteres"
-              autoComplete={
-                mode === 'login' ? 'current-password' : 'new-password'
-              }
-              show={showPassword}
-              onToggleShow={() => setShowPassword((v) => !v)}
-            />
-
-            {mode === 'signup' && (
-              <>
-                <PasswordField
-                  label="Confirmar senha"
-                  value={confirmPassword}
-                  onChange={setConfirmPassword}
-                  placeholder="Repita a senha"
-                  autoComplete="new-password"
-                  show={showConfirm}
-                  onToggleShow={() => setShowConfirm((v) => !v)}
-                />
-                {mismatch && (
-                  <p className="text-sm font-semibold text-danger">
-                    As senhas não coincidem.
-                  </p>
-                )}
-              </>
-            )}
-
-            {error && (
-              <p className="text-sm font-semibold text-danger">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={busy || !configured}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2c4566] to-[#b33a3a] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
-            >
-              {mode === 'login' ? (
+              {mode === 'signup' && (
                 <>
-                  <LogIn className="h-4 w-4" />
-                  {busy ? 'Entrando…' : 'Entrar'}
-                </>
-              ) : (
-                <>
-                  <UserPlus className="h-4 w-4" />
-                  {busy ? 'Criando…' : 'Criar conta'}
+                  <PasswordField
+                    label="Confirmar senha"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    placeholder="Repita a senha"
+                    autoComplete="new-password"
+                    show={showConfirm}
+                    onToggleShow={() => setShowConfirm((v) => !v)}
+                  />
+                  {mismatch && (
+                    <p className="text-sm font-semibold text-danger">
+                      As senhas não coincidem.
+                    </p>
+                  )}
                 </>
               )}
-            </button>
-          </form>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMode((m) => (m === 'login' ? 'signup' : 'login'))
-              setError(null)
-              setConfirmPassword('')
-              setShowConfirm(false)
-            }}
-            className="mt-4 w-full text-center text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300"
-          >
-            {mode === 'login'
-              ? 'Outro professor? Criar conta'
-              : 'Já tem conta? Entrar'}
-          </button>
-        </div>
+              {error && (
+                <p className="text-sm font-semibold text-danger">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={busy || !configured}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2c4566] to-[#b33a3a] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#2c4566]/20 transition hover:opacity-95 disabled:opacity-60"
+              >
+                {mode === 'login' ? (
+                  <>
+                    <LogIn className="h-4 w-4" />
+                    {busy ? 'Entrando…' : 'Entrar no painel'}
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4" />
+                    {busy ? 'Criando…' : 'Criar e validar e-mail'}
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </section>
       </main>
+
+      {verifyEmail && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#141a22]/55 p-4 backdrop-blur-sm sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="verify-title"
+        >
+          <div className="animate-fade-up w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2c4566] to-[#b33a3a] text-white">
+                <Mail className="h-6 w-6" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setVerifyEmail(null)}
+                className="rounded-lg p-1 text-ink-muted hover:bg-brand-50 dark:hover:bg-slate-800"
+                aria-label="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <h2
+              id="verify-title"
+              className="mt-4 font-display text-2xl font-bold text-ink"
+            >
+              Acesse seu e-mail
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+              Enviamos um link para{' '}
+              <strong className="text-ink">{verifyEmail}</strong>. Abra a
+              mensagem e valide a conta. Depois volte aqui e entre com e-mail e
+              senha.
+            </p>
+            <button
+              type="button"
+              onClick={() => setVerifyEmail(null)}
+              className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#2c4566] to-[#b33a3a] px-4 py-2.5 text-sm font-bold text-white"
+            >
+              Ir para o login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
