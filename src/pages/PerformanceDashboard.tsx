@@ -32,7 +32,6 @@ import {
   formatDuration,
   historyVolumePoints,
   isPrNow,
-  isTreadmillName,
   musclesWorked,
 } from '../lib/training'
 import { dayGreeting } from '../lib/greeting'
@@ -247,9 +246,7 @@ export function PerformanceDashboard() {
                         )}
                         <Play className="h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100" />
                       </button>
-                      {ex.muscleGroup === 'Cardio' &&
-                        isTreadmillName(ex.name) &&
-                        ex.incline != null && (
+                      {ex.muscleGroup === 'Cardio' && ex.incline != null && (
                           <p className="mt-0.5 text-[11px] text-ink-muted">
                             {ex.incline}% inclinação
                           </p>

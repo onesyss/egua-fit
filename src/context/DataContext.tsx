@@ -10,6 +10,7 @@ import {
 } from 'react'
 import {
   emptyStudentRecord,
+  isFictionalStudent,
   recomputeMetrics,
 } from '../data/mock'
 import type {
@@ -112,7 +113,7 @@ function loadStudents(userId?: string): StudentRecord[] {
     if (!stored) return []
     const parsed = JSON.parse(stored) as StudentRecord[]
     if (!Array.isArray(parsed) || parsed.length === 0) return []
-    return parsed.map(migrateRecord)
+    return parsed.map(migrateRecord).filter((s) => !isFictionalStudent(s))
   } catch {
     return []
   }
@@ -189,8 +190,10 @@ export function DataProvider({
       .then(async (remote) => {
         if (cancelled) return
         cloudReady.current = true
-        if (remote.length > 0) {
-          const migrated = remote.map(migrateRecord)
+        const migrated = remote
+          .map(migrateRecord)
+          .filter((s) => !isFictionalStudent(s))
+        if (migrated.length > 0) {
           skipNextSync.current = true
           setStudents(migrated)
           setActiveId((curr) =>
@@ -203,7 +206,10 @@ export function DataProvider({
           return
         }
 
-        const local = studentsRef.current
+        const local = studentsRef.current.filter((s) => !isFictionalStudent(s))
+        if (local.length !== studentsRef.current.length) {
+          setStudents(local)
+        }
         if (local.length > 0) {
           skipNextSync.current = false
           setCloudStatus('saving')

@@ -101,7 +101,7 @@ export function cardioMinutes(ex: Pick<Exercise, 'muscleGroup' | 'durationMin' |
 export function formatExerciseDose(ex: Exercise): string {
   if (ex.muscleGroup === 'Cardio') {
     const parts = [`${cardioMinutes(ex)} min`]
-    if (isTreadmillName(ex.name) && ex.incline != null) {
+    if (ex.incline != null) {
       parts.push(`${ex.incline}% incl.`)
     }
     return parts.join(' · ')

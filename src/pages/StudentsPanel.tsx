@@ -74,7 +74,7 @@ export function StudentsPanel() {
     <div className="space-y-6">
       <section className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
+          <h1 className="font-display text-[1.75rem] leading-tight font-extrabold tracking-tight text-ink sm:text-5xl">
             {hello}
             {trainerName ? ',' : ''}
             {trainerName ? (
@@ -89,7 +89,7 @@ export function StudentsPanel() {
           <p className="mt-2 text-sm font-semibold tracking-wide text-ink-muted">
             Meus alunos
           </p>
-          <p className="mt-0.5 max-w-md text-xs text-ink-muted">
+          <p className="mt-0.5 hidden max-w-md text-xs text-ink-muted sm:block">
             Cadastre alunos, monte treinos e acompanhe o desempenho.
           </p>
         </div>

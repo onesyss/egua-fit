@@ -39,6 +39,7 @@ const emptyForm = {
   previousWeight: 0,
   currentWeight: 0,
   durationMin: 20,
+  useIncline: false,
   incline: 1,
 }
 
@@ -141,6 +142,7 @@ export function TrainerDashboard() {
       previousWeight: ex.previousWeight,
       currentWeight: ex.currentWeight,
       durationMin: cardioMinutes(ex) || 20,
+      useIncline: ex.incline != null,
       incline: ex.incline ?? 1,
     })
   }
@@ -164,7 +166,7 @@ export function TrainerDashboard() {
             previousWeight: 0,
             currentWeight: 0,
             durationMin: Number(form.durationMin) || 0,
-            incline: isTreadmillName(form.name) ? Number(form.incline) || 0 : undefined,
+            incline: form.useIncline ? Number(form.incline) || 0 : undefined,
           }
         : {
             muscleGroup: form.muscleGroup,
@@ -578,7 +580,18 @@ export function TrainerDashboard() {
             <input
               className={field}
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) => {
+                const name = e.target.value
+                setForm((f) => ({
+                  ...f,
+                  name,
+                  useIncline: isTreadmillName(name)
+                    ? isTreadmillName(f.name)
+                      ? f.useIncline
+                      : true
+                    : f.useIncline,
+                }))
+              }}
               placeholder={
                 form.muscleGroup === 'Cardio'
                   ? 'Ex.: Esteira, bike, elíptico'
@@ -607,7 +620,18 @@ export function TrainerDashboard() {
                   }
                 />
               </label>
-              {isTreadmillName(form.name) && (
+              <label className="flex items-center gap-2 self-end rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-ink dark:border-slate-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-[#2c4566]"
+                  checked={form.useIncline}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, useIncline: e.target.checked }))
+                  }
+                />
+                Inclinar esteira
+              </label>
+              {form.useIncline && (
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold text-ink-muted">
                     Inclinação (%)
@@ -793,9 +817,7 @@ export function TrainerDashboard() {
                       >
                         {ex.name}
                       </button>
-                      {ex.muscleGroup === 'Cardio' &&
-                        isTreadmillName(ex.name) &&
-                        ex.incline != null && (
+                      {ex.muscleGroup === 'Cardio' && ex.incline != null && (
                           <p className="mt-0.5 text-[11px] text-ink-muted">
                             {ex.incline}% inclinação
                           </p>
