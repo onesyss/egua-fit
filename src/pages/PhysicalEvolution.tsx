@@ -40,7 +40,7 @@ export function PhysicalEvolution() {
           <StudentName
             student={student}
             as="h1"
-            className="font-display text-3xl font-bold"
+            className="font-display text-2xl font-bold sm:text-3xl"
           />
         </div>
       </div>

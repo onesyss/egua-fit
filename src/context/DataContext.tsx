@@ -4,12 +4,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import {
   emptyStudentRecord,
-  initialStudents,
   recomputeMetrics,
 } from '../data/mock'
 import type {
@@ -29,9 +29,17 @@ import {
   STUDENT_COLORS,
 } from '../lib/training'
 import { mergeAssessment } from '../lib/assessment'
+import { supabaseConfigured } from '../lib/supabase'
+import {
+  fetchStudentRecords,
+  syncStudentRecords,
+  cloudErrorHint,
+} from '../lib/supabaseStudents'
 
 const STORAGE_KEY = 'egua-fit-personal-students'
 const PIN_KEY = 'equafit-pinned-students'
+
+export type CloudStatus = 'local' | 'loading' | 'saving' | 'ok' | 'error'
 
 interface GymContextValue {
   students: StudentRecord[]
@@ -39,6 +47,8 @@ interface GymContextValue {
   active: StudentRecord | null
   pinnedIds: string[]
   pinned: StudentRecord[]
+  cloudStatus: CloudStatus
+  cloudError: string | null
   /** @deprecated use active */
   data: StudentRecord
   readOnly: boolean
@@ -95,23 +105,23 @@ function migrateRecord(raw: StudentRecord, index: number): StudentRecord {
   }
 }
 
-function loadStudents(): StudentRecord[] {
+function loadStudents(userId?: string): StudentRecord[] {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (!stored) return structuredClone(initialStudents)
+    const key = userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY
+    const stored = localStorage.getItem(key)
+    if (!stored) return []
     const parsed = JSON.parse(stored) as StudentRecord[]
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return structuredClone(initialStudents)
-    }
+    if (!Array.isArray(parsed) || parsed.length === 0) return []
     return parsed.map(migrateRecord)
   } catch {
-    return structuredClone(initialStudents)
+    return []
   }
 }
 
-function loadPinned(validIds: Set<string>): string[] {
+function loadPinned(userId: string | undefined, validIds: Set<string>): string[] {
   try {
-    const raw = localStorage.getItem(PIN_KEY)
+    const key = userId ? `${PIN_KEY}:${userId}` : PIN_KEY
+    const raw = localStorage.getItem(key)
     if (!raw) return []
     const parsed = JSON.parse(raw) as string[]
     return parsed.filter((id) => validIds.has(id)).slice(0, 2)
@@ -143,30 +153,140 @@ export function DataProvider({
   children,
   seed,
   readOnly = false,
+  userId,
 }: {
   children: ReactNode
   seed?: StudentRecord
   readOnly?: boolean
+  userId?: string
 }) {
   const [students, setStudents] = useState<StudentRecord[]>(() =>
-    seed ? [seed] : loadStudents(),
+    seed ? [seed] : loadStudents(userId),
   )
   const [activeId, setActiveId] = useState<string | null>(
     () => seed?.student.id ?? students[0]?.student.id ?? null,
   )
   const [pinnedIds, setPinnedIds] = useState<string[]>(() =>
-    seed ? [seed.student.id] : loadPinned(new Set(students.map((s) => s.student.id))),
+    seed
+      ? [seed.student.id]
+      : loadPinned(userId, new Set(students.map((s) => s.student.id))),
   )
+  const [cloudStatus, setCloudStatus] = useState<CloudStatus>(() =>
+    seed || readOnly || !supabaseConfigured || !userId ? 'local' : 'loading',
+  )
+  const [cloudError, setCloudError] = useState<string | null>(null)
+  const cloudReady = useRef(seed || readOnly || !supabaseConfigured || !userId)
+  const skipNextSync = useRef(true)
+  const studentsRef = useRef(students)
+  studentsRef.current = students
+
+  useEffect(() => {
+    if (seed || readOnly || !supabaseConfigured || !userId) return
+    let cancelled = false
+    setCloudStatus('loading')
+    skipNextSync.current = true
+    fetchStudentRecords(userId)
+      .then(async (remote) => {
+        if (cancelled) return
+        cloudReady.current = true
+        if (remote.length > 0) {
+          const migrated = remote.map(migrateRecord)
+          skipNextSync.current = true
+          setStudents(migrated)
+          setActiveId((curr) =>
+            migrated.some((s) => s.student.id === curr)
+              ? curr
+              : migrated[0]?.student.id ?? null,
+          )
+          setCloudStatus('ok')
+          setCloudError(null)
+          return
+        }
+
+        const local = studentsRef.current
+        if (local.length > 0) {
+          skipNextSync.current = false
+          setCloudStatus('saving')
+          try {
+            await syncStudentRecords(local, userId)
+            if (cancelled) return
+            setCloudStatus('ok')
+            setCloudError(null)
+          } catch (err: unknown) {
+            if (cancelled) return
+            setCloudStatus('error')
+            setCloudError(cloudErrorHint(err, 'Falha ao salvar no Supabase'))
+          }
+          return
+        }
+
+        skipNextSync.current = false
+        setCloudStatus('ok')
+        setCloudError(null)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        skipNextSync.current = false
+        cloudReady.current = true
+        setCloudStatus('error')
+        setCloudError(cloudErrorHint(err, 'Falha ao conectar no Supabase'))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [seed, readOnly, userId])
 
   useEffect(() => {
     if (seed || readOnly) return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(students))
-  }, [students, seed, readOnly])
+    const key = userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY
+    localStorage.setItem(key, JSON.stringify(students))
+  }, [students, seed, readOnly, userId])
+
+  useEffect(() => {
+    if (seed || readOnly || !supabaseConfigured || !userId || !cloudReady.current) {
+      return
+    }
+    if (skipNextSync.current) {
+      skipNextSync.current = false
+      return
+    }
+    setCloudStatus('saving')
+    const t = window.setTimeout(() => {
+      syncStudentRecords(students, userId)
+        .then(() => {
+          setCloudStatus('ok')
+          setCloudError(null)
+        })
+        .catch((err: unknown) => {
+          setCloudStatus('error')
+          setCloudError(cloudErrorHint(err, 'Falha ao salvar no Supabase'))
+        })
+    }, 500)
+    return () => window.clearTimeout(t)
+  }, [students, seed, readOnly, userId])
+
+  useEffect(() => {
+    if (seed || readOnly || !supabaseConfigured || !userId) return
+    const flush = () => {
+      if (!cloudReady.current) return
+      void syncStudentRecords(studentsRef.current, userId).catch(() => {})
+    }
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      window.removeEventListener('pagehide', flush)
+    }
+  }, [seed, readOnly, userId])
 
   useEffect(() => {
     if (seed || readOnly) return
-    localStorage.setItem(PIN_KEY, JSON.stringify(pinnedIds))
-  }, [pinnedIds, seed, readOnly])
+    const key = userId ? `${PIN_KEY}:${userId}` : PIN_KEY
+    localStorage.setItem(key, JSON.stringify(pinnedIds))
+  }, [pinnedIds, seed, readOnly, userId])
 
   const active = useMemo(
     () => students.find((s) => s.student.id === activeId) ?? students[0] ?? null,
@@ -482,6 +602,8 @@ export function DataProvider({
     active,
     pinnedIds,
     pinned,
+    cloudStatus,
+    cloudError,
     data: active ?? fallbackEmpty,
     readOnly,
     setActiveId: setActiveAndPin,

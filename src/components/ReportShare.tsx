@@ -80,7 +80,7 @@ export function ReportShare({
         </span>
         <textarea
           className={`${field} min-h-[72px]`}
-          placeholder={`Oi, ${record.student.name.split(' ')[0]}! Segue seu relatório EquaFit.`}
+          placeholder={`Oi, ${record.student.name.split(' ')[0]}! Segue seu relatório Égua Fit.`}
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />

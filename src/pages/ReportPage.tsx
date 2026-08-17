@@ -93,7 +93,7 @@ export function ReportPage() {
             <StudentAvatar student={student} size="lg" />
             <div>
               <p className="font-mono text-[10px] tracking-[0.16em] text-ink-muted uppercase">
-                EquaFit · relatório personalizado
+                Égua Fit · relatório personalizado
               </p>
               <StudentName
                 student={student}

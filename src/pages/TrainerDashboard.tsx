@@ -225,7 +225,7 @@ export function TrainerDashboard() {
             <StudentName
               student={record.student}
               as="h1"
-              className="font-display text-3xl font-bold"
+              className="font-display text-2xl font-bold sm:text-3xl"
             />
             <p className="mt-1 text-sm text-ink-muted">
               Matrícula {formatDate(record.student.enrollmentDate)} ·{' '}
@@ -661,8 +661,8 @@ export function TrainerDashboard() {
           value={muscleFilter}
           onChange={setMuscleFilter}
         />
-        <div className="table-scroll overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
+        <div className="table-scroll -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <table className="w-full min-w-[720px] text-left text-sm sm:min-w-[900px]">
             <thead>
               <tr className="border-b border-brand-100 text-[10px] tracking-wider text-ink-muted uppercase dark:border-slate-800">
                 <th className="px-3 py-3 font-mono">Grupo</th>
@@ -789,7 +789,7 @@ export function TrainerDashboard() {
             title="Músculos trabalhados"
             subtitle="Volume por grupo no programa atual"
           />
-          <div className="h-[240px]">
+          <div className="chart-frame h-[200px] sm:h-[240px]">
             <MusclesWorkedBars data={musclesWorked(record.exercises)} />
           </div>
         </Panel>

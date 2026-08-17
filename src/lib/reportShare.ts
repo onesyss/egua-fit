@@ -51,7 +51,7 @@ export function buildReportMessage(record: StudentRecord, extraNote = ''): strin
       : 'Incompleto'
 
   const parts: string[] = [
-    `EquaFit — Relatório de ${student.name}`,
+    `Égua Fit — Relatório de ${student.name}`,
     `Emitido em ${emitted}`,
   ]
 
@@ -149,7 +149,7 @@ export function buildReportMessage(record: StudentRecord, extraNote = ''): strin
     )
   }
 
-  parts.push('', '— EquaFit')
+  parts.push('', '— Égua Fit')
   return parts.filter((p) => p !== undefined).join('\n').replace(/\n{3,}/g, '\n\n')
 }
 
@@ -162,7 +162,7 @@ export function whatsappHref(phone: string, text: string): string | null {
 export function mailtoHref(email: string, studentName: string, text: string): string | null {
   const to = email.trim()
   if (!isValidEmail(to)) return null
-  const subject = encodeURIComponent(`EquaFit — Relatório de ${studentName}`)
+  const subject = encodeURIComponent(`Égua Fit — Relatório de ${studentName}`)
   const body = encodeURIComponent(text)
   return `mailto:${to}?subject=${subject}&body=${body}`
 }

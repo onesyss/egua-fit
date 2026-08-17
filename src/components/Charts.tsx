@@ -16,6 +16,7 @@ import {
 } from 'recharts'
 import type { ChartPoint, Exercise, MuscleGroup, RepsSessionPoint } from '../types'
 import { useTheme } from '../context/ThemeContext'
+import { useIsMobile } from '../lib/useIsMobile'
 
 function useChartTheme() {
   const { resolved } = useTheme()
@@ -41,25 +42,29 @@ function useChartTheme() {
 
 export function PerformanceRepsChart({ data }: { data: RepsSessionPoint[] }) {
   const t = useChartTheme()
+  const mobile = useIsMobile()
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 4 }}>
+      <LineChart
+        data={data}
+        margin={{ top: 8, right: mobile ? 4 : 12, left: 0, bottom: 0 }}
+      >
         <CartesianGrid strokeDasharray="3 6" stroke={t.grid} vertical={false} />
         <XAxis
           dataKey="label"
-          tick={{ fill: t.tick, fontSize: 11 }}
+          tick={{ fill: t.tick, fontSize: mobile ? 9 : 11 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: t.tick, fontSize: 11 }}
+          tick={{ fill: t.tick, fontSize: mobile ? 9 : 11 }}
           axisLine={false}
           tickLine={false}
-          width={32}
+          width={mobile ? 24 : 32}
         />
         <Tooltip contentStyle={t.tooltip} />
         <Legend
-          wrapperStyle={{ fontSize: 11, fontFamily: 'JetBrains Mono' }}
+          wrapperStyle={{ fontSize: mobile ? 10 : 11, fontFamily: 'JetBrains Mono' }}
           iconType="plainline"
         />
         <Line
@@ -87,8 +92,9 @@ export function PerformanceRepsChart({ data }: { data: RepsSessionPoint[] }) {
 
 export function ExerciseCompareBars({ exercises }: { exercises: Exercise[] }) {
   const t = useChartTheme()
+  const mobile = useIsMobile()
   const data = exercises.map((e) => ({
-    name: e.name.length > 16 ? e.name.slice(0, 14) + '…' : e.name,
+    name: e.name.length > (mobile ? 10 : 16) ? e.name.slice(0, mobile ? 8 : 14) + '…' : e.name,
     fullName: e.name,
     planejado: e.sets * e.reps,
     realizado: e.sets * e.repsDone,
@@ -96,23 +102,26 @@ export function ExerciseCompareBars({ exercises }: { exercises: Exercise[] }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 40 }}>
+      <BarChart
+        data={data}
+        margin={{ top: 8, right: 4, left: 0, bottom: mobile ? 28 : 40 }}
+      >
         <CartesianGrid strokeDasharray="3 6" stroke={t.grid} vertical={false} />
         <XAxis
           dataKey="name"
-          tick={{ fill: t.tick, fontSize: 10 }}
+          tick={{ fill: t.tick, fontSize: mobile ? 8 : 10 }}
           axisLine={false}
           tickLine={false}
           interval={0}
-          angle={-18}
+          angle={mobile ? -32 : -18}
           textAnchor="end"
-          height={50}
+          height={mobile ? 42 : 50}
         />
         <YAxis
-          tick={{ fill: t.tick, fontSize: 11 }}
+          tick={{ fill: t.tick, fontSize: mobile ? 9 : 11 }}
           axisLine={false}
           tickLine={false}
-          width={32}
+          width={mobile ? 24 : 32}
         />
         <Tooltip contentStyle={t.tooltip} />
         <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -265,32 +274,39 @@ export function VolumeHistoryChart({
   data: { label: string; volume: number; change: number }[]
 }) {
   const t = useChartTheme()
+  const mobile = useIsMobile()
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 4 }}>
+      <ComposedChart
+        data={data}
+        margin={{ top: 8, right: mobile ? 4 : 12, left: 0, bottom: 0 }}
+      >
         <CartesianGrid strokeDasharray="3 6" stroke={t.grid} vertical={false} />
         <XAxis
           dataKey="label"
-          tick={{ fill: t.tick, fontSize: 11 }}
+          tick={{ fill: t.tick, fontSize: mobile ? 9 : 11 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           yAxisId="kg"
-          tick={{ fill: t.tick, fontSize: 11 }}
+          tick={{ fill: t.tick, fontSize: mobile ? 9 : 11 }}
           axisLine={false}
           tickLine={false}
-          width={42}
+          width={mobile ? 28 : 42}
         />
-        <YAxis
-          yAxisId="pct"
-          orientation="right"
-          tick={{ fill: t.tick, fontSize: 11 }}
-          axisLine={false}
-          tickLine={false}
-          width={36}
-          tickFormatter={(v) => `${v}%`}
-        />
+        {!mobile && (
+          <YAxis
+            yAxisId="pct"
+            orientation="right"
+            tick={{ fill: t.tick, fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            width={36}
+            tickFormatter={(v) => `${v}%`}
+          />
+        )}
+        {mobile && <YAxis yAxisId="pct" hide />}
         <Tooltip
           contentStyle={t.tooltip}
           formatter={(value, name) => {
@@ -299,14 +315,14 @@ export function VolumeHistoryChart({
             return [`${n.toLocaleString('pt-BR')} kg`, 'Carga']
           }}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: mobile ? 10 : 11 }} />
         <Bar
           yAxisId="pct"
           dataKey="change"
           name="Variação %"
           fill={t.muted}
           radius={[3, 3, 0, 0]}
-          maxBarSize={28}
+          maxBarSize={mobile ? 16 : 28}
         />
         <Line
           yAxisId="kg"
@@ -340,6 +356,7 @@ export function MusclesWorkedBars({
   data: { group: MuscleGroup; volumeKg: number; sets: number }[]
 }) {
   const t = useChartTheme()
+  const mobile = useIsMobile()
   const rows = data.map((d) => ({
     name: d.group,
     volume: Math.round(d.volumeKg * 10) / 10,
@@ -351,22 +368,22 @@ export function MusclesWorkedBars({
       <BarChart
         data={rows}
         layout="vertical"
-        margin={{ top: 8, right: 16, left: 8, bottom: 4 }}
+        margin={{ top: 8, right: mobile ? 8 : 16, left: 0, bottom: 4 }}
       >
         <CartesianGrid strokeDasharray="3 6" stroke={t.grid} horizontal={false} />
         <XAxis
           type="number"
-          tick={{ fill: t.tick, fontSize: 11 }}
+          tick={{ fill: t.tick, fontSize: mobile ? 9 : 11 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           type="category"
           dataKey="name"
-          tick={{ fill: t.tick, fontSize: 11 }}
+          tick={{ fill: t.tick, fontSize: mobile ? 10 : 11 }}
           axisLine={false}
           tickLine={false}
-          width={72}
+          width={mobile ? 58 : 72}
         />
         <Tooltip
           contentStyle={t.tooltip}

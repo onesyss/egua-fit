@@ -33,6 +33,7 @@ import {
   isPrNow,
   musclesWorked,
 } from '../lib/training'
+import { dayGreeting } from '../lib/greeting'
 
 function StatCard({
   title,
@@ -46,7 +47,7 @@ function StatCard({
   return (
     <div className="rounded-2xl border border-brand-100/80 bg-white px-4 py-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
       <p className="text-xs font-medium tracking-wide text-ink-muted">{title}</p>
-      <p className="mt-3 font-mono text-3xl font-bold tracking-tight text-ink sm:text-[2rem]">
+      <p className="mt-2 font-mono text-xl font-bold tracking-tight text-ink sm:mt-3 sm:text-3xl sm:text-[2rem]">
         {value}
         {unit && (
           <span className="ml-1 text-base font-medium text-ink-muted">{unit}</span>
@@ -94,8 +95,8 @@ export function PerformanceDashboard() {
         />
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
           <Link
             to="/"
             className="inline-flex items-center gap-1.5 rounded-lg border border-brand-100 px-2.5 py-1.5 text-sm text-ink-muted hover:bg-brand-50 dark:border-slate-700 dark:hover:bg-slate-900"
@@ -105,7 +106,7 @@ export function PerformanceDashboard() {
           </Link>
           <div>
             <p className="tech-label text-brand-600 dark:text-brand-300">
-              dashboard de desempenho
+              {dayGreeting()}
             </p>
             <StudentName
               student={student}
@@ -121,22 +122,22 @@ export function PerformanceDashboard() {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
           <Link
             to={`/aluno/${student.id}/treino`}
-            className="rounded-xl bg-[#2c4566] px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#233650]"
+            className="rounded-xl bg-[#2c4566] px-3.5 py-2 text-center text-sm font-semibold text-white hover:bg-[#233650]"
           >
             Montar / editar treino
           </Link>
           <Link
             to={`/aluno/${student.id}/protocolo`}
-            className="rounded-xl border border-brand-100 px-3.5 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
+            className="rounded-xl border border-brand-100 px-3.5 py-2 text-center text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
           >
             Protocolo
           </Link>
           <Link
             to={`/aluno/${student.id}/evolucao`}
-            className="rounded-xl border border-brand-100 px-3.5 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
+            className="rounded-xl border border-brand-100 px-3.5 py-2 text-center text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
           >
             Evolução física
           </Link>
@@ -173,8 +174,8 @@ export function PerformanceDashboard() {
           onChange={setMuscleFilter}
         />
 
-        <div className="table-scroll -mx-1 overflow-x-auto">
-          <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+        <div className="table-scroll -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <table className="w-full min-w-[720px] border-collapse text-left text-sm sm:min-w-[900px]">
             <thead>
               <tr className="border-b border-brand-100 text-[10px] tracking-[0.1em] text-ink-muted uppercase dark:border-slate-800">
                 <th className="px-3 py-3 font-mono font-semibold">
@@ -341,7 +342,7 @@ export function PerformanceDashboard() {
               </h2>
               <Percent className="h-4 w-4 text-ink-muted" />
             </div>
-            <div className="h-[240px]">
+            <div className="chart-frame h-[200px] sm:h-[240px]">
               <PerformanceRepsChart data={evolution.repsSessions} />
             </div>
           </div>
@@ -365,7 +366,7 @@ export function PerformanceDashboard() {
                 Nível de Energia
               </h2>
             </div>
-            <p className="mt-4 font-mono text-6xl font-bold tracking-tight text-ink">
+            <p className="mt-3 font-mono text-4xl font-bold tracking-tight text-ink sm:mt-4 sm:text-6xl">
               {Math.round(metrics.energyLevel * 10)}
             </p>
             <p className="mt-1 text-lg font-semibold text-[#b33a3a]">
@@ -385,7 +386,7 @@ export function PerformanceDashboard() {
             <p className="mb-2 text-xs text-ink-muted">
               Volume em kg e variação percentual entre treinos salvos
             </p>
-            <div className="h-[260px]">
+            <div className="chart-frame h-[200px] sm:h-[260px]">
               {volumePoints.length > 0 ? (
                 <VolumeHistoryChart data={volumePoints} />
               ) : (
@@ -404,7 +405,7 @@ export function PerformanceDashboard() {
           <p className="mb-2 text-xs text-ink-muted">
             Volume por grupo muscular no programa atual
           </p>
-          <div className="h-[260px]">
+          <div className="chart-frame h-[200px] sm:h-[260px]">
             {muscles.length > 0 ? (
               <MusclesWorkedBars data={muscles} />
             ) : (
@@ -422,7 +423,7 @@ export function PerformanceDashboard() {
               Planejado × realizado por exercício
             </h2>
           </div>
-          <div className="h-[300px]">
+          <div className="chart-frame h-[240px] sm:h-[300px]">
             {exercises.length > 0 ? (
               <ExerciseCompareBars exercises={exercises} />
             ) : (
@@ -445,7 +446,7 @@ export function PerformanceDashboard() {
             <h2 className="mb-3 font-display text-lg font-bold text-ink">
               Treinos passados
             </h2>
-            <div className="table-scroll overflow-x-auto">
+            <div className="table-scroll -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b text-[10px] tracking-wider text-ink-muted uppercase">

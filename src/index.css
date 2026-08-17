@@ -36,6 +36,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 html.dark {
@@ -50,6 +51,8 @@ html.dark {
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
   font-family: var(--font-body);
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -278,6 +281,7 @@ html.dark .tech-icon-btn:hover {
   border-bottom: 1px solid rgba(61, 90, 128, 0.08);
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(14px);
+  padding-top: env(safe-area-inset-top);
 }
 
 html.dark .tech-header {
@@ -310,6 +314,13 @@ html.dark .tech-header {
 .table-scroll {
   scrollbar-width: thin;
   scrollbar-color: #94a8c4 transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chart-frame {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 html.dark .table-scroll {

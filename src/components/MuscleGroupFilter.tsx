@@ -43,7 +43,7 @@ export function MuscleGroupFilter({
           </button>
         )}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
         {chips.map((chip) => {
           const active = value === chip.key
           return (
@@ -52,7 +52,7 @@ export function MuscleGroupFilter({
               type="button"
               onClick={() => onChange(chip.key)}
               className={[
-                'inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-mono text-xs font-semibold tracking-wide uppercase transition-all',
+                'inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 font-mono text-xs font-semibold tracking-wide uppercase transition-all',
                 active
                   ? 'border-transparent bg-[#2c4566] text-white'
                   : 'border-brand-100 bg-white text-brand-700 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300 dark:hover:border-slate-500',

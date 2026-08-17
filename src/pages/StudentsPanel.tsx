@@ -11,13 +11,20 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { useGym } from '../context/DataContext'
+import { useAuth } from '../context/AuthContext'
 import { energyLabel, formatDate } from '../data/mock'
 import { Panel, SectionTitle } from '../components/ui'
 import { StudentName } from '../components/StudentIdentity'
+import { dayGreeting, firstName } from '../lib/greeting'
 
 export function StudentsPanel() {
   const { students, createStudent, removeStudent, setActiveId, pinStudent, pinnedIds } =
     useGym()
+  const { user } = useAuth()
+  const hello = dayGreeting()
+  const trainerName = firstName(
+    (user?.user_metadata?.full_name as string | undefined) || user?.email,
+  )
   const [query, setQuery] = useState('')
   const [openForm, setOpenForm] = useState(false)
   const [form, setForm] = useState({
@@ -67,15 +74,23 @@ export function StudentsPanel() {
     <div className="space-y-6">
       <section className="animate-fade-up flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="tech-label text-brand-600 dark:text-brand-300">
-            painel do personal
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-ink">
-            Meus alunos
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
+            {hello}
+            {trainerName ? ',' : ''}
+            {trainerName ? (
+              <>
+                {' '}
+                <span className="bg-gradient-to-r from-[#2c4566] to-[#b33a3a] bg-clip-text text-transparent">
+                  {trainerName}
+                </span>
+              </>
+            ) : null}
           </h1>
-          <p className="mt-2 max-w-xl text-ink-muted">
-            Cadastre alunos, monte treinos e acompanhe o desempenho — tudo no seu
-            painel interno.
+          <p className="mt-2 text-sm font-semibold tracking-wide text-ink-muted">
+            Meus alunos
+          </p>
+          <p className="mt-0.5 max-w-md text-xs text-ink-muted">
+            Cadastre alunos, monte treinos e acompanhe o desempenho.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
