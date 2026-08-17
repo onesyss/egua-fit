@@ -23,16 +23,16 @@ Abra http://localhost:5173/ — se já estiver logado, use **Sair** no topo para
 
 ## Produção
 
-O GitHub guarda o código; o site no ar é o GitHub Pages:
+Site no ar: **https://egua-fit.netlify.app/**
 
-**https://onesyss.github.io/egua-fit/**
-
-Na primeira vez: no repositório, **Settings → Pages → Source: GitHub Actions**. Em **Settings → Secrets and variables → Actions**, crie:
+O Netlify publica a cada push na `main`. Em **Site configuration → Environment variables**, defina:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-(os mesmos valores do `.env.local`). Depois de cada push na `main`, o site atualiza sozinho.
+(os mesmos do `.env.local`). Sem isso o login abre, mas não conecta no banco.
+
+Rotas como `/login` e `/perfil` precisam do redirect da SPA (já está no `netlify.toml`).
 
 ## Supabase
 
