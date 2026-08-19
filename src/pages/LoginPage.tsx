@@ -9,7 +9,6 @@ import {
   LineChart,
   LogIn,
   Mail,
-  Users,
   UserPlus,
   X,
 } from 'lucide-react'
@@ -253,30 +252,28 @@ export function LoginPage() {
       </header>
 
       <main className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-6 lg:grid-cols-2 lg:py-10">
-        <section className="animate-fade-up hidden lg:block">
-          <p className="font-display text-6xl font-extrabold tracking-tight text-ink xl:text-7xl">
+        <section className="animate-fade-up text-center lg:text-left">
+          <p className="font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl lg:text-6xl xl:text-7xl">
             {dayGreeting()}
           </p>
-          <h1 className="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink xl:text-5xl">
-            Seu painel.
-            <span className="mt-1 block bg-gradient-to-r from-[#2c4566] to-[#b33a3a] bg-clip-text text-transparent">
-              Seus alunos.
+          <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight lg:text-4xl xl:text-5xl">
+            <span className="bg-gradient-to-r from-[#2c4566] to-[#b33a3a] bg-clip-text text-transparent">
+              Acesse seu Dashboard
             </span>
           </h1>
-          <p className="mt-4 max-w-md text-lg text-ink-muted">
+          <p className="mx-auto mt-4 max-w-md text-base text-ink-muted lg:mx-0 lg:text-lg">
             Monte treinos e acompanhe a evolução — tudo no mesmo lugar.
           </p>
-          <ul className="mt-8 space-y-3">
+          <ul className="mt-6 flex items-start justify-center gap-5 lg:mt-8 lg:justify-start">
             {[
-              { icon: Users, text: 'Cadastro e cores por aluno' },
               { icon: Dumbbell, text: 'Programação de treino e cardio' },
-              { icon: LineChart, text: 'Volume, PRs e relatório' },
+              { icon: LineChart, text: 'Volume, recordes pessoais e relatório' },
             ].map(({ icon: Icon, text }) => (
               <li
                 key={text}
-                className="flex items-center gap-3 text-sm font-semibold text-ink"
+                className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center text-sm font-semibold leading-snug text-ink lg:max-w-[14rem] lg:flex-none lg:items-start lg:text-left"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#3d5a80] text-white">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#3d5a80] text-white">
                   <Icon className="h-4 w-4" />
                 </span>
                 {text}
@@ -286,21 +283,6 @@ export function LoginPage() {
         </section>
 
         <section className="animate-fade-up mx-auto w-full max-w-md lg:mx-0 lg:justify-self-end">
-          <div className="mb-4 lg:hidden">
-            <p className="font-display text-4xl font-extrabold tracking-tight text-ink">
-              {dayGreeting()}
-            </p>
-            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-ink">
-              {passwordRecovery
-                ? 'Nova senha'
-                : mode === 'forgot'
-                  ? 'Recuperar senha'
-                  : mode === 'login'
-                    ? 'Entrar'
-                    : 'Criar conta'}
-            </h1>
-          </div>
-
           <div className="tech-panel overflow-hidden p-5 shadow-xl shadow-[#2c4566]/8 sm:p-8">
             {!passwordRecovery && mode !== 'forgot' && (
             <div className="mb-5 grid grid-cols-2 rounded-xl bg-brand-50 p-1 dark:bg-slate-900">
