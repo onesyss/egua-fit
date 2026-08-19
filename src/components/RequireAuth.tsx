@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext'
 import { DataProvider } from '../context/DataContext'
 
 export function RequireAuth() {
-  const { session, loading } = useAuth()
+  const { session, loading, passwordRecovery, emailJustConfirmed, passwordJustUpdated } =
+    useAuth()
 
   if (loading) {
     return (
@@ -13,7 +14,9 @@ export function RequireAuth() {
     )
   }
 
-  if (!session) return <Navigate to="/login" replace />
+  if (!session || passwordRecovery || emailJustConfirmed || passwordJustUpdated) {
+    return <Navigate to="/login" replace />
+  }
 
   return (
     <DataProvider key={session.user.id} userId={session.user.id}>

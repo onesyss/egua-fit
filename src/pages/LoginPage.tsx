@@ -5,6 +5,7 @@ import {
   Dumbbell,
   Eye,
   EyeOff,
+  KeyRound,
   LineChart,
   LogIn,
   Mail,
@@ -15,6 +16,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { dayGreeting } from '../lib/greeting'
+import { humanAuthError } from '../lib/supabase'
 
 const fieldClass =
   'w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-11 pl-3 text-sm text-ink outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-950'
@@ -25,6 +27,7 @@ function PasswordField({
   onChange,
   placeholder,
   autoComplete,
+  name,
   show,
   onToggleShow,
 }: {
@@ -33,6 +36,7 @@ function PasswordField({
   onChange: (value: string) => void
   placeholder: string
   autoComplete: string
+  name?: string
   show: boolean
   onToggleShow: () => void
 }) {
@@ -44,6 +48,7 @@ function PasswordField({
       <div className="relative">
         <input
           type={show ? 'text' : 'password'}
+          name={name}
           className={fieldClass}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -66,8 +71,20 @@ function PasswordField({
 }
 
 export function LoginPage() {
-  const { session, loading, configured, signIn, signUp } = useAuth()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const {
+    session,
+    loading,
+    configured,
+    passwordRecovery,
+    emailJustConfirmed,
+    passwordJustUpdated,
+    signIn,
+    signUp,
+    resetPassword,
+    completePasswordRecovery,
+    signOut,
+  } = useAuth()
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -77,17 +94,93 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [verifyEmail, setVerifyEmail] = useState<string | null>(null)
+  const [resetEmail, setResetEmail] = useState<string | null>(null)
+  const [formKey, setFormKey] = useState(0)
 
-  if (!loading && session) return <Navigate to="/" replace />
+  const clearFields = () => {
+    setName('')
+    setEmail('')
+    setPassword('')
+    setConfirmPassword('')
+    setShowPassword(false)
+    setShowConfirm(false)
+    setError(null)
+    setFormKey((k) => k + 1)
+  }
 
+  if (
+    !loading &&
+    session &&
+    !verifyEmail &&
+    !resetEmail &&
+    !passwordRecovery &&
+    !emailJustConfirmed &&
+    !passwordJustUpdated
+  ) {
+    return <Navigate to="/" replace />
+  }
+
+  const needConfirm = mode === 'signup' || passwordRecovery
   const mismatch =
-    mode === 'signup' &&
-    confirmPassword.length > 0 &&
-    password !== confirmPassword
+    needConfirm && confirmPassword.length > 0 && password !== confirmPassword
+
+  const onForgotPassword = () => {
+    setMode('forgot')
+    setPassword('')
+    setConfirmPassword('')
+    setShowPassword(false)
+    setShowConfirm(false)
+    setError(null)
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (passwordRecovery) {
+      if (!password) {
+        setError('Informe a nova senha.')
+        return
+      }
+      if (password.length < 6) {
+        setError('A senha precisa ter pelo menos 6 caracteres.')
+        return
+      }
+      if (password !== confirmPassword) {
+        setError('As senhas não coincidem.')
+        return
+      }
+      setBusy(true)
+      try {
+        await completePasswordRecovery(password)
+        setMode('login')
+        setPassword('')
+        setConfirmPassword('')
+        setShowPassword(false)
+        setShowConfirm(false)
+      } catch (err: unknown) {
+        setError(humanAuthError(err, 'Não foi possível salvar a senha.'))
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+    if (mode === 'forgot') {
+      if (!email.trim()) {
+        setError('Informe o e-mail da sua conta.')
+        return
+      }
+      setBusy(true)
+      try {
+        await resetPassword(email.trim())
+        setResetEmail(email.trim())
+        setMode('login')
+      } catch (err: unknown) {
+        setError(humanAuthError(err, 'Não foi possível enviar o e-mail.'))
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
     if (!email.trim() || !password) {
       setError('Informe e-mail e senha.')
       return
@@ -116,17 +209,16 @@ export function LoginPage() {
           password,
         })
         setMode('login')
-        setPassword('')
-        setConfirmPassword('')
-        setShowConfirm(false)
         setVerifyEmail(createdEmail)
+        clearFields()
       }
     } catch (err: unknown) {
-      const raw = err instanceof Error ? err.message : 'Não foi possível entrar'
-      if (/invalid login/i.test(raw)) setError('E-mail ou senha inválidos.')
-      else if (/already registered/i.test(raw))
+      const raw = humanAuthError(err, 'Não foi possível entrar')
+      if (/user not found|invalid login|invalid credentials/i.test(raw)) {
+        setError('Usuário inexistente ou não cadastrado.')
+      } else if (/already registered|já tem conta/i.test(raw))
         setError('Este e-mail já tem conta. Entre com a senha.')
-      else if (/email not confirmed|confirm/i.test(raw))
+      else if (/email not confirmed/i.test(raw))
         setError('Valide a conta no e-mail antes de entrar.')
       else setError(raw)
     } finally {
@@ -162,18 +254,17 @@ export function LoginPage() {
 
       <main className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-6 lg:grid-cols-2 lg:py-10">
         <section className="animate-fade-up hidden lg:block">
-          <p className="tech-label text-brand-600 dark:text-brand-300">
+          <p className="font-display text-6xl font-extrabold tracking-tight text-ink xl:text-7xl">
             {dayGreeting()}
           </p>
-          <h1 className="mt-2 font-display text-5xl font-extrabold tracking-tight text-ink xl:text-6xl">
+          <h1 className="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink xl:text-5xl">
             Seu painel.
             <span className="mt-1 block bg-gradient-to-r from-[#2c4566] to-[#b33a3a] bg-clip-text text-transparent">
               Seus alunos.
             </span>
           </h1>
           <p className="mt-4 max-w-md text-lg text-ink-muted">
-            Monte treinos, acompanhe evolução e atenda em dupla — tudo no mesmo
-            lugar.
+            Monte treinos e acompanhe a evolução — tudo no mesmo lugar.
           </p>
           <ul className="mt-8 space-y-3">
             {[
@@ -196,15 +287,22 @@ export function LoginPage() {
 
         <section className="animate-fade-up mx-auto w-full max-w-md lg:mx-0 lg:justify-self-end">
           <div className="mb-4 lg:hidden">
-            <p className="tech-label text-brand-600 dark:text-brand-300">
+            <p className="font-display text-4xl font-extrabold tracking-tight text-ink">
               {dayGreeting()}
             </p>
-            <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-ink">
-              {mode === 'login' ? 'Entrar' : 'Criar conta'}
+            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-ink">
+              {passwordRecovery
+                ? 'Nova senha'
+                : mode === 'forgot'
+                  ? 'Recuperar senha'
+                  : mode === 'login'
+                    ? 'Entrar'
+                    : 'Criar conta'}
             </h1>
           </div>
 
           <div className="tech-panel overflow-hidden p-5 shadow-xl shadow-[#2c4566]/8 sm:p-8">
+            {!passwordRecovery && mode !== 'forgot' && (
             <div className="mb-5 grid grid-cols-2 rounded-xl bg-brand-50 p-1 dark:bg-slate-900">
               <button
                 type="button"
@@ -223,8 +321,9 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
+                  if (mode === 'signup') return
                   setMode('signup')
-                  setError(null)
+                  clearFields()
                 }}
                 className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
                   mode === 'signup'
@@ -235,14 +334,25 @@ export function LoginPage() {
                 Criar conta
               </button>
             </div>
+            )}
 
             <h2 className="hidden font-display text-2xl font-bold text-ink lg:block">
-              {mode === 'login' ? 'Área do personal' : 'Cadastrar personal'}
+              {passwordRecovery
+                ? 'Redefinir senha'
+                : mode === 'forgot'
+                  ? 'Recuperar senha'
+                  : mode === 'login'
+                    ? 'Área do personal'
+                    : 'Cadastrar personal'}
             </h2>
             <p className="mt-1 text-sm text-ink-muted">
-              {mode === 'login'
-                ? 'Acesse o painel com seu e-mail e senha.'
-                : 'Crie sua conta. Vamos enviar um link no e-mail para validar.'}
+              {passwordRecovery
+                ? 'Escolha uma senha nova para voltar ao painel.'
+                : mode === 'forgot'
+                  ? 'Informe o e-mail da sua conta. Se ele existir, enviamos o link para redefinir a senha.'
+                  : mode === 'login'
+                    ? 'Acesse o painel com seu e-mail e senha.'
+                    : 'Crie sua conta. Vamos enviar um link no e-mail para validar.'}
             </p>
 
             {!configured && (
@@ -251,8 +361,25 @@ export function LoginPage() {
               </p>
             )}
 
-            <form onSubmit={onSubmit} className="mt-5 space-y-3">
-              {mode === 'signup' && (
+            {emailJustConfirmed && (
+              <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                E-mail validado. Entre com e-mail e senha para acessar o painel.
+              </p>
+            )}
+
+            {passwordJustUpdated && (
+              <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                Senha alterada. Entre com e-mail e senha para acessar o painel.
+              </p>
+            )}
+
+            <form
+              key={formKey}
+              onSubmit={onSubmit}
+              autoComplete="off"
+              className="mt-5 space-y-3"
+            >
+              {mode === 'signup' && !passwordRecovery && (
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold text-ink-muted">
                     Nome
@@ -262,10 +389,12 @@ export function LoginPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Seu nome"
-                    autoComplete="name"
+                    name={`egua-name-${formKey}`}
+                    autoComplete="off"
                   />
                 </label>
               )}
+              {!passwordRecovery && (
               <label className="block">
                 <span className="mb-1 block text-xs font-semibold text-ink-muted">
                   E-mail
@@ -276,30 +405,64 @@ export function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="voce@email.com"
-                  autoComplete="email"
+                  name={`egua-email-${formKey}`}
+                  autoComplete={mode === 'signup' ? 'off' : 'username'}
                   required
                 />
               </label>
+              )}
 
+              {!passwordRecovery && mode !== 'forgot' && (
               <PasswordField
                 label="Senha"
                 value={password}
                 onChange={setPassword}
                 placeholder="Mínimo 6 caracteres"
+                name={`egua-password-${formKey}`}
                 autoComplete={
-                  mode === 'login' ? 'current-password' : 'new-password'
+                  mode === 'signup' ? 'new-password' : 'current-password'
                 }
                 show={showPassword}
                 onToggleShow={() => setShowPassword((v) => !v)}
               />
+              )}
 
-              {mode === 'signup' && (
+              {passwordRecovery && (
+              <PasswordField
+                label="Nova senha"
+                value={password}
+                onChange={setPassword}
+                placeholder="Mínimo 6 caracteres"
+                name={`egua-password-${formKey}`}
+                autoComplete="new-password"
+                show={showPassword}
+                onToggleShow={() => setShowPassword((v) => !v)}
+              />
+              )}
+
+              {mode === 'login' && !passwordRecovery && (
+                <div className="-mt-1 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={onForgotPassword}
+                    disabled={busy || !configured}
+                    className="text-sm font-semibold text-brand-700 hover:underline disabled:opacity-60 dark:text-brand-300"
+                  >
+                    Recuperar senha
+                  </button>
+                </div>
+              )}
+
+              {needConfirm && (
                 <>
                   <PasswordField
-                    label="Confirmar senha"
+                    label={
+                      passwordRecovery ? 'Confirmar nova senha' : 'Confirmar senha'
+                    }
                     value={confirmPassword}
                     onChange={setConfirmPassword}
                     placeholder="Repita a senha"
+                    name={`egua-confirm-${formKey}`}
                     autoComplete="new-password"
                     show={showConfirm}
                     onToggleShow={() => setShowConfirm((v) => !v)}
@@ -321,7 +484,17 @@ export function LoginPage() {
                 disabled={busy || !configured}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2c4566] to-[#b33a3a] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#2c4566]/20 transition hover:opacity-95 disabled:opacity-60"
               >
-                {mode === 'login' ? (
+                {passwordRecovery ? (
+                  <>
+                    <KeyRound className="h-4 w-4" />
+                    {busy ? 'Salvando…' : 'Salvar nova senha'}
+                  </>
+                ) : mode === 'forgot' ? (
+                  <>
+                    <Mail className="h-4 w-4" />
+                    {busy ? 'Verificando…' : 'Enviar link'}
+                  </>
+                ) : mode === 'login' ? (
                   <>
                     <LogIn className="h-4 w-4" />
                     {busy ? 'Entrando…' : 'Entrar no painel'}
@@ -333,12 +506,29 @@ export function LoginPage() {
                   </>
                 )}
               </button>
+              {(passwordRecovery || mode === 'forgot') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null)
+                    if (passwordRecovery) {
+                      void signOut()
+                      return
+                    }
+                    setMode('login')
+                  }}
+                  disabled={busy}
+                  className="w-full text-sm font-semibold text-ink-muted hover:underline disabled:opacity-60"
+                >
+                  Cancelar e voltar ao login
+                </button>
+              )}
             </form>
           </div>
         </section>
       </main>
 
-      {verifyEmail && (
+      {(verifyEmail || resetEmail) && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-[#141a22]/55 p-4 backdrop-blur-sm sm:items-center"
           role="dialog"
@@ -352,7 +542,11 @@ export function LoginPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setVerifyEmail(null)}
+                onClick={() => {
+                  setVerifyEmail(null)
+                  setResetEmail(null)
+                  setMode('login')
+                }}
                 className="rounded-lg p-1 text-ink-muted hover:bg-brand-50 dark:hover:bg-slate-800"
                 aria-label="Fechar"
               >
@@ -367,13 +561,18 @@ export function LoginPage() {
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-ink-muted">
               Enviamos um link para{' '}
-              <strong className="text-ink">{verifyEmail}</strong>. Abra a
-              mensagem e valide a conta. Depois volte aqui e entre com e-mail e
-              senha.
+              <strong className="text-ink">{verifyEmail ?? resetEmail}</strong>.
+              {resetEmail
+                ? ' Abra a mensagem e defina uma nova senha.'
+                : ' Abra a mensagem e valide a conta. Depois volte aqui e entre com e-mail e senha.'}
             </p>
             <button
               type="button"
-              onClick={() => setVerifyEmail(null)}
+              onClick={() => {
+                setVerifyEmail(null)
+                setResetEmail(null)
+                setMode('login')
+              }}
               className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#2c4566] to-[#b33a3a] px-4 py-2.5 text-sm font-bold text-white"
             >
               Ir para o login
