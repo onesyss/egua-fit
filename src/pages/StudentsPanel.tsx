@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import {
   CalendarDays,
   ChevronRight,
+  Palette,
+  Pencil,
   Pin,
   Plus,
   Search,
@@ -16,9 +18,10 @@ import { energyLabel, formatDate } from '../data/mock'
 import { Panel, SectionTitle } from '../components/ui'
 import { StudentName } from '../components/StudentIdentity'
 import { dayGreeting, firstName } from '../lib/greeting'
+import { STUDENT_COLORS } from '../lib/training'
 
 export function StudentsPanel() {
-  const { students, createStudent, removeStudent, setActiveId, pinStudent, pinnedIds } =
+  const { students, createStudent, updateStudent, removeStudent, setActiveId, pinStudent, pinnedIds } =
     useGym()
   const { user } = useAuth()
   const hello = dayGreeting()
@@ -27,11 +30,13 @@ export function StudentsPanel() {
   )
   const [query, setQuery] = useState('')
   const [openForm, setOpenForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
     enrollmentDate: new Date().toISOString().slice(0, 10),
+    color: STUDENT_COLORS[0] as string,
   })
   const [error, setError] = useState<string | null>(null)
 
@@ -44,27 +49,48 @@ export function StudentsPanel() {
     )
   })
 
-  const onCreate = (e: FormEvent) => {
+  const emptyForm = () => {
+    const used = new Set(students.map((s) => s.student.color.toLowerCase()))
+    const next =
+      STUDENT_COLORS.find((c) => !used.has(c.toLowerCase())) ?? STUDENT_COLORS[0]
+    return {
+      name: '',
+      email: '',
+      phone: '',
+      enrollmentDate: new Date().toISOString().slice(0, 10),
+      color: next as string,
+    }
+  }
+
+  const closeForm = () => {
+    setOpenForm(false)
+    setEditingId(null)
+    setError(null)
+  }
+
+  const onSave = (e: FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) {
       setError('Informe o nome do aluno.')
       return
     }
-    const id = createStudent({
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
+    const payload = {
+      name: form.name.trim(),
+      email: form.email.trim() || undefined,
+      phone: form.phone.trim() || undefined,
       enrollmentDate: form.enrollmentDate,
-    })
+      color: form.color,
+    }
+    if (editingId) {
+      updateStudent(payload, editingId)
+      setForm(emptyForm())
+      closeForm()
+      return
+    }
+    const id = createStudent(payload)
     setActiveId(id)
-    setForm({
-      name: '',
-      email: '',
-      phone: '',
-      enrollmentDate: new Date().toISOString().slice(0, 10),
-    })
-    setError(null)
-    setOpenForm(false)
+    setForm(emptyForm())
+    closeForm()
   }
 
   const field =
@@ -105,7 +131,16 @@ export function StudentsPanel() {
           )}
           <button
             type="button"
-            onClick={() => setOpenForm((v) => !v)}
+            onClick={() => {
+              if (openForm && !editingId) {
+                closeForm()
+                return
+              }
+              setEditingId(null)
+              setForm(emptyForm())
+              setError(null)
+              setOpenForm(true)
+            }}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2c4566] to-[#b33a3a] px-4 py-2.5 text-sm font-bold text-white shadow-sm"
           >
             <Plus className="h-4 w-4" />
@@ -116,9 +151,12 @@ export function StudentsPanel() {
 
       {openForm && (
         <Panel delay="delay-1">
-          <SectionTitle title="Cadastrar aluno" subtitle="Dados básicos" />
+          <SectionTitle
+            title={editingId ? 'Editar aluno' : 'Cadastrar aluno'}
+            subtitle={editingId ? 'Atualize os dados e a cor do card' : 'Dados básicos'}
+          />
           <form
-            onSubmit={onCreate}
+            onSubmit={onSave}
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
           >
             <label className="block sm:col-span-2">
@@ -171,6 +209,58 @@ export function StudentsPanel() {
                 }
               />
             </label>
+            <div className="sm:col-span-2 lg:col-span-4">
+              <span className="mb-2 block text-xs font-semibold text-ink-muted">
+                Cor do card
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {STUDENT_COLORS.map((c) => {
+                  const selected = form.color.toLowerCase() === c.toLowerCase()
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      title={c}
+                      onClick={() => setForm((f) => ({ ...f, color: c }))}
+                      className={`h-8 w-8 rounded-full border-2 transition ${
+                        selected
+                          ? 'scale-110 border-white ring-2 ring-[#2c4566] dark:border-slate-900'
+                          : 'border-white/80 hover:scale-105 dark:border-slate-800'
+                      }`}
+                      style={{ backgroundColor: c }}
+                      aria-label={`Cor ${c}`}
+                      aria-pressed={selected}
+                    />
+                  )
+                })}
+                <label
+                  className="relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-900"
+                  title="Escolher qualquer cor"
+                >
+                  <span
+                    className="absolute inset-1 rounded-full"
+                    style={{ backgroundColor: form.color }}
+                  />
+                  <Palette className="relative z-10 h-3.5 w-3.5 text-white drop-shadow" />
+                  <input
+                    type="color"
+                    value={
+                      /^#[0-9a-fA-F]{6}$/.test(form.color)
+                        ? form.color
+                        : '#2c4566'
+                    }
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, color: e.target.value }))
+                    }
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    aria-label="Escolher cor personalizada"
+                  />
+                </label>
+              </div>
+              <p className="mt-1.5 text-[11px] text-ink-muted">
+                Cores prontas ou o seletor para o tom que quiser.
+              </p>
+            </div>
             {error && (
               <p className="sm:col-span-2 text-sm font-semibold text-danger">
                 {error}
@@ -181,11 +271,11 @@ export function StudentsPanel() {
                 type="submit"
                 className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800"
               >
-                Criar aluno
+                {editingId ? 'Salvar alterações' : 'Criar aluno'}
               </button>
               <button
                 type="button"
-                onClick={() => setOpenForm(false)}
+                onClick={closeForm}
                 className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-ink-muted dark:border-slate-700"
               >
                 Cancelar
@@ -234,6 +324,25 @@ export function StudentsPanel() {
                 </div>
               </div>
               <div className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(s.student.id)
+                    setForm({
+                      name: s.student.name,
+                      email: s.student.email ?? '',
+                      phone: s.student.phone ?? '',
+                      enrollmentDate: s.student.enrollmentDate.slice(0, 10),
+                      color: s.student.color || STUDENT_COLORS[0],
+                    })
+                    setError(null)
+                    setOpenForm(true)
+                  }}
+                  className="rounded-lg p-2 text-ink-muted hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-slate-800"
+                  title="Editar aluno"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
                 <button
                   type="button"
                   onClick={() => pinStudent(s.student.id)}

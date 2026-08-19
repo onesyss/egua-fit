@@ -61,6 +61,7 @@ interface GymContextValue {
     email?: string
     phone?: string
     enrollmentDate?: string
+    color?: string
   }) => string
   removeStudent: (id: string) => void
   updateStudent: (patch: Partial<Student>, studentId?: string) => void
@@ -345,6 +346,7 @@ export function DataProvider({
       email?: string
       phone?: string
       enrollmentDate?: string
+      color?: string
     }) => {
       const record = emptyStudentRecord(input.name.trim() || 'Novo aluno')
       record.student.email = input.email?.trim() || undefined
@@ -352,8 +354,9 @@ export function DataProvider({
       if (input.enrollmentDate) {
         record.student.enrollmentDate = input.enrollmentDate
       }
+      const chosen = input.color?.trim()
       setStudents((prev) => {
-        record.student.color = nextColor(prev)
+        record.student.color = chosen || nextColor(prev)
         return [...prev, record]
       })
       setActiveId(record.student.id)
