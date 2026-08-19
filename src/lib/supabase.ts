@@ -160,6 +160,9 @@ export function humanAuthError(err: unknown, fallback: string): string {
   if (/rate limit|too many/i.test(msg)) {
     return AUTH_ERROR_PT.over_email_send_rate_limit
   }
+  if (/failed to fetch|networkerror|network request failed|load failed/i.test(msg)) {
+    return 'Sem conexão com o servidor. Confira a internet, desative bloqueador e tente de novo.'
+  }
   if (/confirmation email|error sending|smtp|unexpected_failure/i.test(msg)) {
     return AUTH_ERROR_PT.unexpected_failure
   }
