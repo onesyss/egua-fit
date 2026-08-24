@@ -2,13 +2,15 @@ import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
   Activity,
-  Dumbbell,
+  ClipboardList,
   Eye,
   EyeOff,
+  HeartPulse,
   KeyRound,
-  LineChart,
+  LayoutDashboard,
   LogIn,
   Mail,
+  Scale,
   UserPlus,
   X,
 } from 'lucide-react'
@@ -264,22 +266,58 @@ export function LoginPage() {
           <p className="mx-auto mt-4 max-w-md text-base text-ink-muted lg:mx-0 lg:text-lg">
             Monte treinos e acompanhe a evolução — tudo no mesmo lugar.
           </p>
-          <ul className="mt-6 flex items-start justify-center gap-5 lg:mt-8 lg:justify-start">
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:mt-8">
             {[
-              { icon: Dumbbell, text: 'Programação de treino e cardio' },
-              { icon: LineChart, text: 'Volume, recordes pessoais e relatório' },
-            ].map(({ icon: Icon, text }) => (
-              <li
-                key={text}
-                className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center text-sm font-semibold leading-snug text-ink lg:max-w-[14rem] lg:flex-none lg:items-start lg:text-left"
+              {
+                icon: ClipboardList,
+                title: 'Organização dos treinos',
+                items: [
+                  'Separar e organizar os treinos dos alunos.',
+                  'Definir a divisão dos treinos de acordo com o objetivo e a rotina de cada aluno.',
+                ],
+              },
+              {
+                icon: HeartPulse,
+                title: 'Monitoramento do aluno',
+                items: [
+                  'Criar um campo para registrar o nível de energia/disposição do aluno.',
+                  'Registrar as limitações e restrições de cada aluno para facilitar a prescrição dos exercícios.',
+                ],
+              },
+              {
+                icon: LayoutDashboard,
+                title: 'Página de entrada',
+                items: [
+                  'Melhorar a página inicial/entrada para facilitar a navegação e deixar as informações mais claras.',
+                ],
+              },
+              {
+                icon: Scale,
+                title: 'Protocolo e avaliação',
+                items: [
+                  'Reformular a parte do protocolo de avaliação.',
+                  'Adicionar a integração com a balança.',
+                  'Exibir o peso corporal.',
+                  'Apresentar a composição/medidas por segmentos do corpo, de forma visual e organizada.',
+                ],
+              },
+            ].map(({ icon: Icon, title, items }) => (
+              <article
+                key={title}
+                className="flex flex-col items-center text-center lg:items-start lg:text-left"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#3d5a80] text-white">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#3d5a80] text-white">
                   <Icon className="h-4 w-4" />
                 </span>
-                {text}
-              </li>
+                <h2 className="mt-2 text-sm font-bold text-ink">{title}</h2>
+                <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-ink-muted sm:text-sm">
+                  {items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </article>
             ))}
-          </ul>
+          </div>
         </section>
 
         <section className="animate-fade-up mx-auto w-full max-w-md lg:mx-0 lg:justify-self-end">
