@@ -26,14 +26,17 @@ import {
 } from '../components/MuscleGroupFilter'
 import { ExerciseGuideModal } from '../components/ExerciseGuideModal'
 import { StudentName } from '../components/StudentIdentity'
+import { WorkoutDayTabs } from '../components/WorkoutDayTabs'
 import {
   cardioMinutes,
+  exerciseDay,
   exerciseVolumeKg,
   formatDuration,
   historyVolumePoints,
   isPrNow,
   musclesWorked,
 } from '../lib/training'
+import type { TrainingDay } from '../types'
 import { dayGreeting } from '../lib/greeting'
 
 function StatCard({
@@ -63,6 +66,7 @@ export function PerformanceDashboard() {
   const { students, setActiveId } = useGym()
   const record = students.find((s) => s.student.id === studentId)
   const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')
+  const [trainingDay, setTrainingDay] = useState<TrainingDay>('A')
   const [guideExercise, setGuideExercise] = useState<{
     name: string
     muscleGroup: string
@@ -72,11 +76,15 @@ export function PerformanceDashboard() {
     if (studentId) setActiveId(studentId)
   }, [studentId, setActiveId])
 
-  const filteredExercises = useMemo(() => {
+  const dayExercises = useMemo(() => {
     if (!record) return []
-    if (muscleFilter === 'all') return record.exercises
-    return record.exercises.filter((e) => e.muscleGroup === muscleFilter)
-  }, [record, muscleFilter])
+    return record.exercises.filter((e) => exerciseDay(e) === trainingDay)
+  }, [record, trainingDay])
+
+  const filteredExercises = useMemo(() => {
+    if (muscleFilter === 'all') return dayExercises
+    return dayExercises.filter((e) => e.muscleGroup === muscleFilter)
+  }, [dayExercises, muscleFilter])
 
   if (!record) return <Navigate to="/" replace />
 
@@ -125,10 +133,14 @@ export function PerformanceDashboard() {
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
           <Link
-            to={`/aluno/${student.id}/treino`}
+            to={
+              trainingDay === 'A'
+                ? `/aluno/${student.id}/treino`
+                : `/aluno/${student.id}/treino?treino=${trainingDay}`
+            }
             className="rounded-xl bg-[#2c4566] px-3.5 py-2 text-center text-sm font-semibold text-white hover:bg-[#233650]"
           >
-            Montar / editar treino
+            Montar / editar Treino {trainingDay}
           </Link>
           <Link
             to={`/aluno/${student.id}/protocolo`}
@@ -141,6 +153,12 @@ export function PerformanceDashboard() {
             className="rounded-xl border border-brand-100 px-3.5 py-2 text-center text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
           >
             Evolução física
+          </Link>
+          <Link
+            to={`/aluno/${student.id}/evolucao#peso`}
+            className="rounded-xl border border-brand-100 px-3.5 py-2 text-center text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
+          >
+            Registrar peso
           </Link>
         </div>
       </div>
@@ -156,21 +174,34 @@ export function PerformanceDashboard() {
               </h2>
             </div>
             <p className="text-sm text-ink-muted">
+              Treino {trainingDay}
               {muscleFilter === 'all'
-                ? `${exercises.length} exercícios no programa`
-                : `Filtrado: ${muscleFilter} · ${filteredExercises.length} de ${exercises.length}`}
+                ? ` · ${dayExercises.length} exercícios`
+                : ` · ${muscleFilter} · ${filteredExercises.length} de ${dayExercises.length}`}
             </p>
           </div>
           <Link
-            to={`/aluno/${student.id}/treino`}
+            to={
+              trainingDay === 'A'
+                ? `/aluno/${student.id}/treino`
+                : `/aluno/${student.id}/treino?treino=${trainingDay}`
+            }
             className="text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300"
           >
-            Editar programação →
+            Editar Treino {trainingDay} →
           </Link>
         </div>
 
+        <div className="mb-3">
+          <WorkoutDayTabs
+            exercises={exercises}
+            value={trainingDay}
+            onChange={setTrainingDay}
+          />
+        </div>
+
         <MuscleGroupFilter
-          exercises={exercises}
+          exercises={dayExercises}
           value={muscleFilter}
           onChange={setMuscleFilter}
         />
@@ -309,11 +340,15 @@ export function PerformanceDashboard() {
                     colSpan={9}
                     className="px-3 py-12 text-center text-ink-muted"
                   >
-                    {exercises.length === 0 ? (
+                    {dayExercises.length === 0 ? (
                       <span>
-                        Nenhum exercício no treino.{' '}
+                        Nenhum exercício no Treino {trainingDay}.{' '}
                         <Link
-                          to={`/aluno/${student.id}/treino`}
+                          to={
+                            trainingDay === 'A'
+                              ? `/aluno/${student.id}/treino`
+                              : `/aluno/${student.id}/treino?treino=${trainingDay}`
+                          }
                           className="font-semibold text-brand-700 hover:underline dark:text-brand-300"
                         >
                           Montar treino

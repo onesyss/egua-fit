@@ -2,20 +2,18 @@ import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
   Activity,
-  ClipboardList,
   Eye,
   EyeOff,
-  HeartPulse,
   KeyRound,
-  LayoutDashboard,
   LogIn,
   Mail,
-  Scale,
   UserPlus,
   X,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { LoginHeroVisual } from '../components/LoginHeroVisual'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { BrandBackdrop } from '../components/BrandBackdrop'
 import { dayGreeting } from '../lib/greeting'
 import { humanAuthError } from '../lib/supabase'
 
@@ -231,10 +229,8 @@ export function LoginPage() {
     'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-ink outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-950'
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <div className="pointer-events-none absolute -top-28 -left-20 h-72 w-72 rounded-full bg-[#2c4566]/20 blur-3xl motion-safe:animate-pulse" />
-      <div className="pointer-events-none absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-[#b33a3a]/12 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 left-1/4 h-64 w-64 rounded-full bg-[#3d5a80]/15 blur-3xl motion-safe:animate-pulse" />
+    <div className="login-page relative flex min-h-screen flex-col overflow-hidden">
+      <BrandBackdrop />
 
       <header className="relative z-10 flex items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
@@ -253,75 +249,10 @@ export function LoginPage() {
         <ThemeToggle />
       </header>
 
-      <main className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-6 lg:grid-cols-2 lg:py-10">
-        <section className="animate-fade-up text-center lg:text-left">
-          <p className="font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl lg:text-6xl xl:text-7xl">
-            {dayGreeting()}
-          </p>
-          <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight lg:text-4xl xl:text-5xl">
-            <span className="bg-gradient-to-r from-[#2c4566] to-[#b33a3a] bg-clip-text text-transparent">
-              Acesse seu Dashboard
-            </span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-md text-base text-ink-muted lg:mx-0 lg:text-lg">
-            Monte treinos e acompanhe a evolução — tudo no mesmo lugar.
-          </p>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:mt-8">
-            {[
-              {
-                icon: ClipboardList,
-                title: 'Organização dos treinos',
-                items: [
-                  'Separar e organizar os treinos dos alunos.',
-                  'Definir a divisão dos treinos de acordo com o objetivo e a rotina de cada aluno.',
-                ],
-              },
-              {
-                icon: HeartPulse,
-                title: 'Monitoramento do aluno',
-                items: [
-                  'Criar um campo para registrar o nível de energia/disposição do aluno.',
-                  'Registrar as limitações e restrições de cada aluno para facilitar a prescrição dos exercícios.',
-                ],
-              },
-              {
-                icon: LayoutDashboard,
-                title: 'Página de entrada',
-                items: [
-                  'Melhorar a página inicial/entrada para facilitar a navegação e deixar as informações mais claras.',
-                ],
-              },
-              {
-                icon: Scale,
-                title: 'Protocolo e avaliação',
-                items: [
-                  'Reformular a parte do protocolo de avaliação.',
-                  'Adicionar a integração com a balança.',
-                  'Exibir o peso corporal.',
-                  'Apresentar a composição/medidas por segmentos do corpo, de forma visual e organizada.',
-                ],
-              },
-            ].map(({ icon: Icon, title, items }) => (
-              <article
-                key={title}
-                className="flex flex-col items-center text-center lg:items-start lg:text-left"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#2c4566] to-[#3d5a80] text-white">
-                  <Icon className="h-4 w-4" />
-                </span>
-                <h2 className="mt-2 text-sm font-bold text-ink">{title}</h2>
-                <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-ink-muted sm:text-sm">
-                  {items.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="animate-fade-up mx-auto w-full max-w-md lg:mx-0 lg:justify-self-end">
-          <div className="tech-panel overflow-hidden p-5 shadow-xl shadow-[#2c4566]/8 sm:p-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 items-center px-4 py-6">
+        <div className="login-shell animate-fade-up grid w-full overflow-hidden lg:grid-cols-2">
+          <LoginHeroVisual greeting={dayGreeting()} />
+          <section className="flex h-full flex-col justify-center overflow-y-auto p-5 sm:p-8 lg:p-10">
             {!passwordRecovery && mode !== 'forgot' && (
             <div className="mb-5 grid grid-cols-2 rounded-xl bg-brand-50 p-1 dark:bg-slate-900">
               <button
@@ -544,8 +475,8 @@ export function LoginPage() {
                 </button>
               )}
             </form>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
 
       {(verifyEmail || resetEmail) && (

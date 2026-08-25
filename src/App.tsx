@@ -12,6 +12,7 @@ import { TrainerDashboard } from './pages/TrainerDashboard'
 import { ProtocolPage } from './pages/ProtocolPage'
 import { ReportPage } from './pages/ReportPage'
 import { DualSession } from './pages/DualSession'
+import { WeightDetailsPage } from './pages/WeightDetailsPage'
 
 export default function App() {
   const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined
@@ -43,6 +44,10 @@ export default function App() {
                 <Route
                   path="aluno/:studentId/relatorio"
                   element={<ReportPage />}
+                />
+                <Route
+                  path="aluno/:studentId/peso"
+                  element={<WeightDetailsPage />}
                 />
               </Route>
             </Route>

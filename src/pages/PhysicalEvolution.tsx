@@ -9,15 +9,22 @@ import {
 } from '../components/Charts'
 import { MetricCard, Panel, SectionTitle } from '../components/ui'
 import { StudentName } from '../components/StudentIdentity'
+import { WeightTracker } from '../components/WeightTracker'
 
 export function PhysicalEvolution() {
   const { studentId } = useParams()
-  const { students, setActiveId } = useGym()
+  const { students, setActiveId, addWeightLog } = useGym()
   const record = students.find((s) => s.student.id === studentId)
 
   useEffect(() => {
     if (studentId) setActiveId(studentId)
   }, [studentId, setActiveId])
+
+  useEffect(() => {
+    if (window.location.hash === '#peso') {
+      document.getElementById('peso')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [studentId])
 
   if (!record) return <Navigate to="/" replace />
 
@@ -43,6 +50,16 @@ export function PhysicalEvolution() {
             className="font-display text-2xl font-bold sm:text-3xl"
           />
         </div>
+      </div>
+
+      <div id="peso">
+        <WeightTracker
+          studentId={student.id}
+          logs={record.weightLogs ?? []}
+          heightCm={record.anamnesis.heightCm}
+          bodyFat={record.anamnesis.bodyFat}
+          onAdd={(kg) => addWeightLog(kg, student.id)}
+        />
       </div>
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

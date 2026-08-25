@@ -5,9 +5,18 @@ import type {
   PersonalRecord,
   SessionClock,
   Student,
+  TrainingDay,
   WorkoutExerciseLog,
   WorkoutSession,
 } from '../types'
+
+export const TRAINING_DAYS: TrainingDay[] = ['A', 'B', 'C', 'D', 'E']
+
+export function exerciseDay(exercise: Exercise): TrainingDay {
+  return TRAINING_DAYS.includes(exercise.day as TrainingDay)
+    ? (exercise.day as TrainingDay)
+    : 'A'
+}
 
 export function calcIncrease(previous: number, current: number): number {
   if (previous === 0) return current > 0 ? 100 : 0
@@ -149,6 +158,27 @@ export function bmi(weightKg: number, heightCm: number): number | null {
   const m = heightCm / 100
   return Number((weightKg / (m * m)).toFixed(1))
 }
+
+export type BmiBand = 'abaixo' | 'normal' | 'sobrepeso' | 'obeso'
+
+export function bmiBand(value: number | null): BmiBand | null {
+  if (value == null) return null
+  if (value < 18.5) return 'abaixo'
+  if (value < 25) return 'normal'
+  if (value < 30) return 'sobrepeso'
+  return 'obeso'
+}
+
+export const BMI_BANDS: {
+  id: BmiBand
+  label: string
+  color: string
+}[] = [
+  { id: 'abaixo', label: 'Abaixo', color: '#8ecae6' },
+  { id: 'normal', label: 'Normal', color: '#8fce7a' },
+  { id: 'sobrepeso', label: 'Sobrepeso', color: '#f4c430' },
+  { id: 'obeso', label: 'Obeso', color: '#e44545' },
+]
 
 export function snapshotSession(
   exercises: Exercise[],

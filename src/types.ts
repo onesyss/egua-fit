@@ -22,7 +22,11 @@ export interface Exercise {
   durationMin?: number
   /** Esteira: inclinação em % */
   incline?: number
+  /** Treino A–E da divisão */
+  day?: TrainingDay
 }
+
+export type TrainingDay = 'A' | 'B' | 'C' | 'D' | 'E'
 
 export interface Student {
   id: string
@@ -185,6 +189,24 @@ export interface Anamnesis {
   updatedAt?: string
 }
 
+export interface WeightLog {
+  at: string
+  kg: number
+  photo?: string
+  bodyFat?: number
+  skeletalMusclePercent?: number
+  muscleMassPercent?: number
+  waterPercent?: number
+  visceralFat?: number
+  boneKg?: number
+  metabolism?: number
+  proteinPercent?: number
+  obesityPercent?: number
+  metabolicAge?: number
+  lbmKg?: number
+  age?: number
+}
+
 export interface SessionClock {
   startedAt: string | null
   accumulatedSec: number
@@ -204,6 +226,7 @@ export interface StudentRecord {
   personalRecords: PersonalRecord[]
   anamnesis: Anamnesis
   assessment: Assessment
+  weightLogs: WeightLog[]
   sessionClock: SessionClock
 }
 

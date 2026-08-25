@@ -20,10 +20,13 @@ import type {
   PhysicalRecord,
   Student,
   StudentRecord,
+  TrainingDay,
+  WeightLog,
 } from '../types'
 import {
   emptyAnamnesis,
   emptyClock,
+  exerciseDay,
   liveElapsed,
   liveWorkElapsed,
   snapshotSession,
@@ -68,6 +71,12 @@ interface GymContextValue {
   updatePhysical: (patch: Partial<PhysicalRecord>, studentId?: string) => void
   updateAnamnesis: (patch: Partial<Anamnesis>, studentId?: string) => void
   updateAssessment: (patch: Partial<Assessment>, studentId?: string) => void
+  addWeightLog: (kg: number, studentId?: string) => void
+  updateWeightLog: (
+    at: string,
+    patch: Partial<Omit<WeightLog, 'at'>>,
+    studentId?: string,
+  ) => void
   updateMetricsMeta: (
     patch: Partial<Pick<StudentRecord['metrics'], 'frequency' | 'energyLevel'>>,
     studentId?: string,
@@ -79,7 +88,7 @@ interface GymContextValue {
     studentId?: string,
   ) => void
   removeExercise: (id: string, studentId?: string) => void
-  saveWorkout: (studentId?: string) => void
+  saveWorkout: (studentId?: string, day?: TrainingDay) => void
   startSession: (studentId?: string) => void
   pauseSession: (studentId?: string) => void
   resetSession: (studentId?: string) => void
@@ -88,6 +97,15 @@ interface GymContextValue {
 }
 
 const GymContext = createContext<GymContextValue | null>(null)
+
+function migrateWeightLogs(raw: StudentRecord): WeightLog[] {
+  if (Array.isArray(raw.weightLogs) && raw.weightLogs.length > 0) {
+    return raw.weightLogs
+  }
+  const kg = raw.anamnesis?.weightKg
+  if (!kg) return []
+  return [{ at: raw.anamnesis.updatedAt ?? new Date().toISOString(), kg }]
+}
 
 function migrateRecord(raw: StudentRecord, index: number): StudentRecord {
   const student = raw.student ?? ({} as Student)
@@ -99,10 +117,15 @@ function migrateRecord(raw: StudentRecord, index: number): StudentRecord {
         student.color ||
         STUDENT_COLORS[index % STUDENT_COLORS.length],
     },
+    exercises: (raw.exercises ?? []).map((e) => ({
+      ...e,
+      day: e.day === 'B' || e.day === 'C' || e.day === 'D' || e.day === 'E' ? e.day : 'A',
+    })),
     history: raw.history ?? [],
     personalRecords: raw.personalRecords ?? [],
     anamnesis: { ...emptyAnamnesis(), ...raw.anamnesis },
     assessment: mergeAssessment(raw.assessment),
+    weightLogs: migrateWeightLogs(raw),
     sessionClock: raw.sessionClock ?? emptyClock(),
   }
 }
@@ -451,6 +474,50 @@ export function DataProvider({
     [patchRecord],
   )
 
+  const addWeightLog = useCallback(
+    (kg: number, studentId?: string) => {
+      const value = Number(kg)
+      if (!Number.isFinite(value) || value <= 0) return
+      patchRecord(studentId, (r) => ({
+        ...r,
+        weightLogs: [...(r.weightLogs ?? []), { at: new Date().toISOString(), kg: value }],
+        anamnesis: {
+          ...r.anamnesis,
+          weightKg: value,
+          updatedAt: new Date().toISOString(),
+        },
+      }))
+    },
+    [patchRecord],
+  )
+
+  const updateWeightLog = useCallback(
+    (
+      at: string,
+      patch: Partial<Omit<WeightLog, 'at'>>,
+      studentId?: string,
+    ) => {
+      patchRecord(studentId, (r) => {
+        const weightLogs = (r.weightLogs ?? []).map((log) =>
+          log.at === at ? { ...log, ...patch } : log,
+        )
+        const ordered = [...weightLogs].sort((a, b) => a.at.localeCompare(b.at))
+        const latest = ordered[ordered.length - 1]
+        return {
+          ...r,
+          weightLogs,
+          anamnesis: {
+            ...r.anamnesis,
+            weightKg: latest?.kg ?? r.anamnesis.weightKg,
+            bodyFat: latest?.bodyFat ?? r.anamnesis.bodyFat,
+            updatedAt: new Date().toISOString(),
+          },
+        }
+      })
+    },
+    [patchRecord],
+  )
+
   const updateMetricsMeta = useCallback(
     (
       patch: Partial<Pick<StudentRecord['metrics'], 'frequency' | 'energyLevel'>>,
@@ -497,11 +564,15 @@ export function DataProvider({
   )
 
   const saveWorkout = useCallback(
-    (studentId?: string) => {
+    (studentId?: string, day?: TrainingDay) => {
       patchRecord(studentId, (r) => {
+        const list = day
+          ? r.exercises.filter((e) => exerciseDay(e) === day)
+          : r.exercises
+        if (list.length === 0) return r
         const previous = r.history[r.history.length - 1]
         const { session, records } = snapshotSession(
-          r.exercises,
+          list,
           previous,
           r.sessionClock,
           r.personalRecords,
@@ -624,6 +695,8 @@ export function DataProvider({
     updatePhysical,
     updateAnamnesis,
     updateAssessment,
+    addWeightLog,
+    updateWeightLog,
     updateMetricsMeta,
     addExercise,
     updateExercise,

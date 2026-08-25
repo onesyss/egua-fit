@@ -121,7 +121,13 @@ function makeStudent(
   extras?: Partial<
     Pick<
       StudentRecord,
-      'physical' | 'evolution' | 'metrics' | 'history' | 'anamnesis' | 'assessment'
+      | 'physical'
+      | 'evolution'
+      | 'metrics'
+      | 'history'
+      | 'anamnesis'
+      | 'assessment'
+      | 'weightLogs'
     >
   >,
 ): StudentRecord {
@@ -154,6 +160,7 @@ function makeStudent(
       })),
     anamnesis: extras?.anamnesis ?? emptyAnamnesis(),
     assessment: extras?.assessment ?? emptyAssessment(),
+    weightLogs: extras?.weightLogs ?? [],
     sessionClock: emptyClock(),
   }
 }

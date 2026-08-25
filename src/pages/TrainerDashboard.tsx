@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ClipboardList,
@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { useGym } from '../context/DataContext'
 import { calcIncrease, formatDate, muscleGroups } from '../data/mock'
-import type { Exercise, MuscleGroup } from '../types'
+import type { Exercise, MuscleGroup, TrainingDay } from '../types'
 import {
   MuscleGroupFilter,
   type MuscleFilter,
@@ -21,6 +21,7 @@ import { ExerciseGuideModal } from '../components/ExerciseGuideModal'
 import { Panel, SectionTitle } from '../components/ui'
 import { SessionTimer } from '../components/SessionTimer'
 import { StudentName } from '../components/StudentIdentity'
+import { WorkoutDayTabs } from '../components/WorkoutDayTabs'
 import { MusclesWorkedBars } from '../components/Charts'
 import {
   exerciseVolumeKg,
@@ -28,6 +29,7 @@ import {
   musclesWorked,
   cardioMinutes,
   isTreadmillName,
+  exerciseDay,
 } from '../lib/training'
 
 const emptyForm = {
@@ -41,10 +43,19 @@ const emptyForm = {
   durationMin: 20,
   useIncline: false,
   incline: 1,
+  day: 'A' as TrainingDay,
 }
 
 export function TrainerDashboard() {
   const { studentId } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const trainingDay: TrainingDay =
+    searchParams.get('treino') === 'B' ||
+    searchParams.get('treino') === 'C' ||
+    searchParams.get('treino') === 'D' ||
+    searchParams.get('treino') === 'E'
+      ? (searchParams.get('treino') as TrainingDay)
+      : 'A'
   const {
     students,
     setActiveId,
@@ -115,12 +126,16 @@ export function TrainerDashboard() {
     })
   }, [record])
 
-  const filteredExercises = useMemo(() => {
+  const dayExercises = useMemo(() => {
     if (!record) return []
+    return record.exercises.filter((e) => exerciseDay(e) === trainingDay)
+  }, [record, trainingDay])
+
+  const filteredExercises = useMemo(() => {
     return muscleFilter === 'all'
-      ? record.exercises
-      : record.exercises.filter((e) => e.muscleGroup === muscleFilter)
-  }, [record, muscleFilter])
+      ? dayExercises
+      : dayExercises.filter((e) => e.muscleGroup === muscleFilter)
+  }, [dayExercises, muscleFilter])
 
   if (!record) return <Navigate to="/" replace />
 
@@ -130,6 +145,10 @@ export function TrainerDashboard() {
   }
 
   const sid = record.student.id
+  const setTrainingDay = (day: TrainingDay) => {
+    setSearchParams(day === 'A' ? {} : { treino: day })
+    if (!editingId) setForm((f) => ({ ...f, day }))
+  }
 
   const startEdit = (ex: Exercise) => {
     setEditingId(ex.id)
@@ -144,12 +163,13 @@ export function TrainerDashboard() {
       durationMin: cardioMinutes(ex) || 20,
       useIncline: ex.incline != null,
       incline: ex.incline ?? 1,
+      day: exerciseDay(ex),
     })
   }
 
   const cancelEdit = () => {
     setEditingId(null)
-    setForm(emptyForm)
+    setForm({ ...emptyForm, day: trainingDay })
   }
 
   const onSubmitExercise = (e: FormEvent) => {
@@ -167,6 +187,7 @@ export function TrainerDashboard() {
             currentWeight: 0,
             durationMin: Number(form.durationMin) || 0,
             incline: form.useIncline ? Number(form.incline) || 0 : undefined,
+            day: form.day,
           }
         : {
             muscleGroup: form.muscleGroup,
@@ -178,6 +199,7 @@ export function TrainerDashboard() {
             currentWeight: form.currentWeight,
             durationMin: undefined,
             incline: undefined,
+            day: form.day,
           }
     if (editingId) {
       updateExercise(editingId, payload, sid)
@@ -186,7 +208,7 @@ export function TrainerDashboard() {
     } else {
       addExercise(payload, sid)
       flash('Exercício adicionado')
-      setForm(emptyForm)
+      setForm({ ...emptyForm, day: form.day })
     }
   }
 
@@ -260,9 +282,9 @@ export function TrainerDashboard() {
               className="font-display text-2xl font-bold sm:text-3xl"
             />
             <p className="mt-1 text-sm text-ink-muted">
-              Matrícula {formatDate(record.student.enrollmentDate)} ·{' '}
-              {record.exercises.length} exercícios · carga levantada{' '}
-              {record.metrics.totalLoad.toLocaleString('pt-BR')} kg
+              Matrícula {formatDate(record.student.enrollmentDate)} · Treino{' '}
+              {trainingDay} · {dayExercises.length} exercícios neste treino ·{' '}
+              {record.exercises.length} no total
             </p>
           </div>
         </div>
@@ -290,7 +312,7 @@ export function TrainerDashboard() {
             <button
               type="button"
               onClick={() => {
-                saveWorkout(sid)
+                saveWorkout(sid, trainingDay)
                 flash('Treino salvo no histórico')
               }}
               className="inline-flex items-center gap-2 rounded-xl bg-[#2c4566] px-4 py-2 text-sm font-semibold text-white"
@@ -302,7 +324,7 @@ export function TrainerDashboard() {
         </div>
         <SessionTimer
           clock={record.sessionClock}
-          exercises={record.exercises}
+          exercises={dayExercises}
           onStart={() => startSession(sid)}
           onPause={() => pauseSession(sid)}
           onReset={() => resetSession(sid)}
@@ -539,12 +561,37 @@ export function TrainerDashboard() {
       <Panel delay="delay-3">
         <SectionTitle
           title={editingId ? 'Editar exercício' : 'Adicionar exercício'}
-          subtitle="Programação de treino do aluno"
+          subtitle={`Programação do Treino ${form.day}`}
         />
+        <div className="mb-4">
+          <WorkoutDayTabs
+            exercises={record.exercises}
+            value={trainingDay}
+            onChange={setTrainingDay}
+          />
+        </div>
         <form
           onSubmit={onSubmitExercise}
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
         >
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-ink-muted">
+              Treino
+            </span>
+            <select
+              className={field}
+              value={form.day}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, day: e.target.value as TrainingDay }))
+              }
+            >
+              {(['A', 'B', 'C', 'D', 'E'] as const).map((d) => (
+                <option key={d} value={d}>
+                  Treino {d}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-ink-muted">
               Grupo muscular
@@ -765,11 +812,18 @@ export function TrainerDashboard() {
 
       <Panel delay="delay-4">
         <SectionTitle
-          title="Programação"
-          subtitle={`${record.exercises.length} exercícios`}
+          title={`Programação · Treino ${trainingDay}`}
+          subtitle={`${dayExercises.length} exercícios neste treino · ${record.exercises.length} no total`}
         />
+        <div className="mb-3">
+          <WorkoutDayTabs
+            exercises={record.exercises}
+            value={trainingDay}
+            onChange={setTrainingDay}
+          />
+        </div>
         <MuscleGroupFilter
-          exercises={record.exercises}
+          exercises={dayExercises}
           value={muscleFilter}
           onChange={setMuscleFilter}
         />

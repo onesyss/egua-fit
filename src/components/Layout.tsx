@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Activity, CircleUser, LogOut, Users, X, UsersRound } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
+import { BrandBackdrop } from './BrandBackdrop'
 import { useGym } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import { colorForStudent } from '../lib/training'
@@ -25,7 +26,8 @@ export function Layout() {
             : 'Local'
 
   return (
-    <div className="min-h-screen">
+    <div className="login-page relative min-h-screen overflow-x-clip">
+      <BrandBackdrop />
       <header className="tech-header sticky top-0 z-50 no-print">
         <div
           className={`mx-auto min-w-0 px-3 py-2 sm:px-6 sm:py-3 ${dualWide ? 'max-w-[1600px]' : 'max-w-7xl'}`}
@@ -193,7 +195,7 @@ export function Layout() {
       </header>
 
       <main
-        className={`mx-auto min-w-0 px-3 py-5 sm:px-6 sm:py-8 ${dualWide ? 'max-w-[1600px]' : 'max-w-7xl'}`}
+        className={`relative z-10 mx-auto min-w-0 px-3 py-5 sm:px-6 sm:py-8 ${dualWide ? 'max-w-[1600px]' : 'max-w-7xl'}`}
       >
         <Outlet />
       </main>
