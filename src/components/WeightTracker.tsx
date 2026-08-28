@@ -101,7 +101,7 @@ export function WeightTracker({
           </div>
           {!heightCm ? (
             <p className="px-1 text-xs text-ink-muted">
-              Cadastre a altura no Protocolo para classificar o IMC.
+              Cadastre a altura na Anamnese para classificar o IMC.
             </p>
           ) : imc ? (
             <p className="px-1 text-xs text-ink-muted">

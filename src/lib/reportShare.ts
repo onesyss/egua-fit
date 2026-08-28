@@ -31,6 +31,56 @@ export function isValidEmail(raw: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim())
 }
 
+export function buildProtocolMessage(record: StudentRecord, extraNote = ''): string {
+  const { student, anamnesis, history } = record
+  const emitted = new Date().toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const parts: string[] = [
+    `Égua Fit — Protocolo de ${student.name}`,
+    `Emitido em ${emitted}`,
+  ]
+
+  if (extraNote.trim()) {
+    parts.push('', extraNote.trim())
+  }
+
+  parts.push(
+    '',
+    '*Prescrição*',
+    line('Foco', anamnesis.trainingFocus),
+    anamnesis.weeklyStructure ? anamnesis.weeklyStructure : '',
+    line('Métodos', anamnesis.methods),
+    line('Progressão', anamnesis.progression),
+  )
+
+  if (anamnesis.notes) {
+    parts.push('', `Notas: ${anamnesis.notes}`)
+  }
+
+  if (history.length) {
+    parts.push('', '*Treinos salvos*')
+    history.forEach((s, i) => {
+      parts.push(
+        `T${i + 1} · ${formatDate(s.date.slice(0, 10))} · ${s.volumeKg.toLocaleString('pt-BR')} kg${
+          s.volumeChangePercent
+            ? ` (${s.volumeChangePercent > 0 ? '+' : ''}${s.volumeChangePercent}%)`
+            : ''
+        } · sessão ${formatDuration(s.sessionDurationSec)} · trabalho ${formatDuration(s.workDurationSec)}`,
+      )
+    })
+    parts.push('', 'Gráficos completos: imprima a tela de protocolo em PDF.')
+  } else {
+    parts.push('', 'Ainda não há treinos salvos no histórico.')
+  }
+
+  parts.push('', '— Égua Fit')
+  return parts.filter((p) => p !== undefined).join('\n').replace(/\n{3,}/g, '\n\n')
+}
+
 export function buildReportMessage(record: StudentRecord, extraNote = ''): string {
   const { student, anamnesis, assessment, exercises, metrics, history, personalRecords } =
     record

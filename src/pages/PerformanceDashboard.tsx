@@ -3,11 +3,13 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   CalendarDays,
+  ClipboardList,
   Dumbbell,
   Flame,
   Layers,
   Percent,
   Play,
+  Save,
   Trophy,
   Weight,
 } from 'lucide-react'
@@ -25,6 +27,7 @@ import {
   type MuscleFilter,
 } from '../components/MuscleGroupFilter'
 import { ExerciseGuideModal } from '../components/ExerciseGuideModal'
+import { SessionTimer } from '../components/SessionTimer'
 import { StudentName } from '../components/StudentIdentity'
 import { WorkoutDayTabs } from '../components/WorkoutDayTabs'
 import {
@@ -63,10 +66,22 @@ function StatCard({
 
 export function PerformanceDashboard() {
   const { studentId } = useParams()
-  const { students, setActiveId } = useGym()
+  const {
+    students,
+    setActiveId,
+    updateMetricsMeta,
+    saveWorkout,
+    startSession,
+    pauseSession,
+    resetSession,
+    startWork,
+    pauseWork,
+  } = useGym()
   const record = students.find((s) => s.student.id === studentId)
   const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')
   const [trainingDay, setTrainingDay] = useState<TrainingDay>('A')
+  const [energyLevel, setEnergyLevel] = useState(8)
+  const [flashMsg, setFlashMsg] = useState<string | null>(null)
   const [guideExercise, setGuideExercise] = useState<{
     name: string
     muscleGroup: string
@@ -75,6 +90,15 @@ export function PerformanceDashboard() {
   useEffect(() => {
     if (studentId) setActiveId(studentId)
   }, [studentId, setActiveId])
+
+  useEffect(() => {
+    if (record) setEnergyLevel(record.metrics.energyLevel)
+  }, [record?.student.id, record?.metrics.energyLevel])
+
+  const flash = (msg: string) => {
+    setFlashMsg(msg)
+    window.setTimeout(() => setFlashMsg(null), 2000)
+  }
 
   const dayExercises = useMemo(() => {
     if (!record) return []
@@ -90,6 +114,7 @@ export function PerformanceDashboard() {
 
   const { student, exercises, metrics, evolution, history, personalRecords } =
     record
+  const sid = student.id
   const freqPercent = Math.min(Math.round((metrics.frequency / 5) * 100), 100)
   const volumePoints = historyVolumePoints(history)
   const muscles = musclesWorked(exercises)
@@ -143,6 +168,15 @@ export function PerformanceDashboard() {
             Montar / editar Treino {trainingDay}
           </Link>
           <Link
+            to={`/aluno/${student.id}/anamnese`}
+            className="rounded-xl border border-brand-100 px-3.5 py-2 text-center text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
+          >
+            <span className="inline-flex items-center justify-center gap-1.5">
+              <ClipboardList className="h-4 w-4" />
+              Anamnese
+            </span>
+          </Link>
+          <Link
             to={`/aluno/${student.id}/protocolo`}
             className="rounded-xl border border-brand-100 px-3.5 py-2 text-center text-sm font-semibold text-brand-700 hover:bg-brand-50 dark:border-slate-700 dark:text-brand-200"
           >
@@ -160,6 +194,78 @@ export function PerformanceDashboard() {
           >
             Registrar peso
           </Link>
+        </div>
+        {flashMsg && (
+          <div className="w-full rounded-xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 sm:w-auto">
+            {flashMsg}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-bold text-ink">
+              Sessão de treino
+            </h2>
+            <p className="text-sm text-ink-muted">
+              Tempo da sessão, tempo de trabalho e energia do aluno
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              saveWorkout(sid, trainingDay)
+              flash('Treino salvo no histórico')
+            }}
+            disabled={dayExercises.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#2c4566] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            Salvar treino
+          </button>
+        </div>
+
+        <SessionTimer
+          clock={record.sessionClock}
+          exercises={dayExercises}
+          onStart={() => startSession(sid)}
+          onPause={() => pauseSession(sid)}
+          onReset={() => resetSession(sid)}
+          onStartWork={() => startWork(sid)}
+          onPauseWork={() => pauseWork(sid)}
+        />
+
+        <div className="mt-3 rounded-xl border border-brand-100 bg-brand-50/40 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Flame className="h-4 w-4 text-[#b33a3a]" />
+              <p className="text-sm font-semibold text-ink">
+                Nível de energia do aluno
+              </p>
+            </div>
+            <p className="text-sm font-semibold text-[#b33a3a]">
+              {energyLabel(energyLevel)} · {Math.round(energyLevel * 10)}/100
+            </p>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            step={0.5}
+            value={energyLevel}
+            onChange={(e) => {
+              const level = Number(e.target.value)
+              setEnergyLevel(level)
+              updateMetricsMeta({ energyLevel: level }, sid)
+            }}
+            className="h-2 w-full cursor-pointer accent-[#b33a3a]"
+          />
+          <div className="mt-1 flex justify-between text-[10px] font-semibold tracking-wide text-ink-muted uppercase">
+            <span>Baixa</span>
+            <span>Média</span>
+            <span>Alta</span>
+          </div>
         </div>
       </div>
 

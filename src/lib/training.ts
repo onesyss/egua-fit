@@ -253,6 +253,39 @@ export function historyVolumePoints(history: WorkoutSession[]) {
   }))
 }
 
+export function historyRepsPoints(history: WorkoutSession[]) {
+  return history.map((s, i) => ({
+    label: `T${i + 1}`,
+    planned: s.exercises.reduce((acc, e) => acc + e.reps * e.sets, 0),
+    done: s.exercises.reduce((acc, e) => acc + e.repsDone * e.sets, 0),
+  }))
+}
+
+export function historyDurationPoints(history: WorkoutSession[]) {
+  return history.map((s, i) => ({
+    month: `T${i + 1}`,
+    value: s.sessionDurationSec,
+  }))
+}
+
+export function sessionMuscleVolume(session: WorkoutSession) {
+  const map = new Map<
+    MuscleGroup,
+    { volumeKg: number; sets: number }
+  >()
+  for (const ex of session.exercises) {
+    const cur = map.get(ex.muscleGroup) ?? { volumeKg: 0, sets: 0 }
+    map.set(ex.muscleGroup, {
+      volumeKg: cur.volumeKg + ex.volumeKg,
+      sets: cur.sets + ex.sets,
+    })
+  }
+  return [...map.entries()].map(([group, stats]) => ({
+    group,
+    ...stats,
+  }))
+}
+
 export function isPrNow(ex: Exercise, records: PersonalRecord[]): boolean {
   if (ex.currentWeight <= 0) return false
   const rec = records.find((r) => r.exerciseName === ex.name)

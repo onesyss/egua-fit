@@ -10,6 +10,7 @@ import { PerformanceDashboard } from './pages/PerformanceDashboard'
 import { PhysicalEvolution } from './pages/PhysicalEvolution'
 import { TrainerDashboard } from './pages/TrainerDashboard'
 import { ProtocolPage } from './pages/ProtocolPage'
+import { AnamnesePage } from './pages/AnamnesePage'
 import { ReportPage } from './pages/ReportPage'
 import { DualSession } from './pages/DualSession'
 import { WeightDetailsPage } from './pages/WeightDetailsPage'
@@ -36,6 +37,10 @@ export default function App() {
                 <Route
                   path="aluno/:studentId/evolucao"
                   element={<PhysicalEvolution />}
+                />
+                <Route
+                  path="aluno/:studentId/anamnese"
+                  element={<AnamnesePage />}
                 />
                 <Route
                   path="aluno/:studentId/protocolo"

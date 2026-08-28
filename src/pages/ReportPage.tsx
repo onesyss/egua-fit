@@ -61,11 +61,11 @@ export function ReportPage() {
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link
-            to={`/aluno/${student.id}/protocolo`}
+            to={`/aluno/${student.id}/anamnese`}
             className="inline-flex items-center gap-1.5 rounded-lg border border-brand-100 px-2.5 py-1.5 text-sm text-ink-muted hover:bg-brand-50 dark:border-slate-700"
           >
             <ArrowLeft className="h-4 w-4" />
-            Protocolo
+            Anamnese
           </Link>
           <StudentName
             student={student}
