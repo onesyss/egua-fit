@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 interface MetricCardProps {
   title: string
@@ -92,5 +93,91 @@ export function Panel({
     <div className={`tech-panel animate-fade-up ${delay} p-4 sm:p-6 ${className}`}>
       {children}
     </div>
+  )
+}
+
+export function CollapsibleCard({
+  title,
+  subtitle,
+  icon: Icon,
+  defaultOpen = false,
+  children,
+  className = '',
+  id,
+  headerExtra,
+}: {
+  title: string
+  subtitle?: string
+  icon?: LucideIcon
+  defaultOpen?: boolean
+  children: ReactNode
+  className?: string
+  id?: string
+  headerExtra?: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const toggle = () => setOpen((value) => !value)
+
+  return (
+    <section
+      id={id}
+      className={`relative rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 ${className}`}
+    >
+      <div className="flex flex-col gap-3 pr-11 sm:pr-12">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-expanded={open}
+            className="flex min-w-0 flex-1 items-start gap-2 rounded-lg text-left outline-none hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand-400"
+          >
+            {Icon && (
+              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-300" />
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-lg font-bold text-ink">
+                {title}
+              </span>
+              {subtitle && (
+                <span className="mt-0.5 block text-sm font-normal text-ink-muted">
+                  {subtitle}
+                </span>
+              )}
+            </span>
+          </button>
+          {headerExtra && (
+            <div
+              className="flex shrink-0 flex-wrap items-end gap-2"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              {headerExtra}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-label={open ? 'Recolher seção' : 'Expandir seção'}
+        title={open ? 'Recolher' : 'Expandir'}
+        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl border border-brand-100 bg-white text-ink-muted shadow-sm transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:hover:text-brand-200 sm:right-4 sm:top-4"
+      >
+        <ChevronDown
+          className={`h-5 w-5 transition-transform duration-200 ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      <div
+        className={`collapsible-body mt-4 ${open ? 'block' : 'hidden'}`}
+        aria-hidden={!open}
+      >
+        {children}
+      </div>
+    </section>
   )
 }

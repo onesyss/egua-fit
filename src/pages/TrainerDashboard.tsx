@@ -10,7 +10,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useGym } from '../context/DataContext'
-import { calcIncrease, formatDate, muscleGroups } from '../data/mock'
+import { formatDate, muscleGroups } from '../data/mock'
 import type { Exercise, MuscleGroup, TrainingDay } from '../types'
 import {
   MuscleGroupFilter,
@@ -22,13 +22,19 @@ import { StudentName } from '../components/StudentIdentity'
 import { WorkoutDayTabs } from '../components/WorkoutDayTabs'
 import { MusclesWorkedBars } from '../components/Charts'
 import {
-  exerciseVolumeKg,
   isPrNow,
   musclesWorked,
   cardioMinutes,
   isTreadmillName,
   exerciseDay,
+  isBodyweightExercise,
+  exerciseProgressPercent,
 } from '../lib/training'
+import {
+  BodyweightBadge,
+  formatExerciseVolume,
+  RepsDoneInput,
+} from '../components/ExerciseLiveFields'
 
 const emptyForm = {
   muscleGroup: 'Peito' as MuscleGroup,
@@ -42,6 +48,7 @@ const emptyForm = {
   useIncline: false,
   incline: 1,
   day: 'A' as TrainingDay,
+  bodyweight: false,
 }
 
 export function TrainerDashboard() {
@@ -155,6 +162,7 @@ export function TrainerDashboard() {
       useIncline: ex.incline != null,
       incline: ex.incline ?? 1,
       day: exerciseDay(ex),
+      bodyweight: ex.bodyweight === true,
     })
   }
 
@@ -186,8 +194,9 @@ export function TrainerDashboard() {
             sets: form.sets,
             reps: form.reps,
             repsDone: form.repsDone,
-            previousWeight: form.previousWeight,
-            currentWeight: form.currentWeight,
+            previousWeight: form.bodyweight ? 0 : form.previousWeight,
+            currentWeight: form.bodyweight ? 0 : form.currentWeight,
+            bodyweight: form.bodyweight,
             durationMin: undefined,
             incline: undefined,
             day: form.day,
@@ -635,6 +644,23 @@ export function TrainerDashboard() {
             </>
           ) : (
             <>
+          <label className="flex items-center gap-2 sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={form.bodyweight}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  bodyweight: e.target.checked,
+                  previousWeight: e.target.checked ? 0 : f.previousWeight,
+                  currentWeight: e.target.checked ? 0 : f.currentWeight,
+                }))
+              }
+            />
+            <span className="text-sm font-semibold text-ink">
+              Peso corporal (sem carga externa)
+            </span>
+          </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-ink-muted">
               Séries
@@ -677,6 +703,8 @@ export function TrainerDashboard() {
               }
             />
           </label>
+          {!form.bodyweight && (
+            <>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-ink-muted">
               Peso anterior (kg)
@@ -713,6 +741,8 @@ export function TrainerDashboard() {
               }
             />
           </label>
+            </>
+          )}
             </>
           )}
           <div className="flex items-end gap-2">
@@ -778,8 +808,9 @@ export function TrainerDashboard() {
             </thead>
             <tbody>
               {filteredExercises.map((ex) => {
-                const inc = calcIncrease(ex.previousWeight, ex.currentWeight)
+                const inc = exerciseProgressPercent(ex)
                 const pr = isPrNow(ex, record.personalRecords)
+                const bw = isBodyweightExercise(ex)
                 return (
                   <tr
                     key={ex.id}
@@ -804,6 +835,11 @@ export function TrainerDashboard() {
                       >
                         {ex.name}
                       </button>
+                      {bw && (
+                        <span className="ml-1">
+                          <BodyweightBadge compact />
+                        </span>
+                      )}
                       {ex.muscleGroup === 'Cardio' && ex.incline != null && (
                           <p className="mt-0.5 text-[11px] text-ink-muted">
                             {ex.incline}% inclinação
@@ -825,18 +861,25 @@ export function TrainerDashboard() {
                       {ex.muscleGroup === 'Cardio' ? '—' : ex.reps}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums">
-                      {ex.muscleGroup === 'Cardio' ? '—' : ex.repsDone}
+                      {ex.muscleGroup === 'Cardio' ? (
+                        '—'
+                      ) : (
+                        <RepsDoneInput
+                          value={ex.repsDone}
+                          onChange={(repsDone) =>
+                            updateExercise(ex.id, { repsDone }, sid)
+                          }
+                        />
+                      )}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums text-ink-muted">
-                      {ex.previousWeight || '—'}
+                      {bw ? 'PC' : ex.previousWeight || '—'}
                     </td>
                     <td className="px-3 py-3 text-center font-semibold tabular-nums">
-                      {ex.currentWeight || '—'}
+                      {bw ? 'PC' : ex.currentWeight || '—'}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums">
-                      {exerciseVolumeKg(ex) > 0
-                        ? Math.round(exerciseVolumeKg(ex)).toLocaleString('pt-BR')
-                        : '—'}
+                      {formatExerciseVolume(ex)}
                     </td>
                     <td className="px-3 py-3 text-center">
                       <span

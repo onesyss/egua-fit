@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Dumbbell,
   Flame,
+  History,
   Layers,
   Percent,
   Play,
@@ -14,7 +15,7 @@ import {
   Weight,
 } from 'lucide-react'
 import { useGym } from '../context/DataContext'
-import { calcIncrease, energyLabel, formatDate } from '../data/mock'
+import { energyLabel, formatDate } from '../data/mock'
 import {
   ExerciseCompareBars,
   FrequencyDonut,
@@ -27,15 +28,23 @@ import {
   type MuscleFilter,
 } from '../components/MuscleGroupFilter'
 import { ExerciseGuideModal } from '../components/ExerciseGuideModal'
+import {
+  BodyweightBadge,
+  formatExerciseVolume,
+  RepsDoneInput,
+} from '../components/ExerciseLiveFields'
 import { SessionTimer } from '../components/SessionTimer'
+import { StudentEvolutionPanel } from '../components/StudentEvolutionPanel'
 import { StudentName } from '../components/StudentIdentity'
 import { WorkoutDayTabs } from '../components/WorkoutDayTabs'
+import { CollapsibleCard } from '../components/ui'
 import {
   cardioMinutes,
   exerciseDay,
-  exerciseVolumeKg,
+  exerciseProgressPercent,
   formatDuration,
   historyVolumePoints,
+  isBodyweightExercise,
   isPrNow,
   musclesWorked,
 } from '../lib/training'
@@ -70,6 +79,7 @@ export function PerformanceDashboard() {
     students,
     setActiveId,
     updateMetricsMeta,
+    updateExercise,
     saveWorkout,
     startSession,
     pauseSession,
@@ -345,13 +355,9 @@ export function PerformanceDashboard() {
             </thead>
             <tbody>
               {filteredExercises.map((ex) => {
-                const increase = calcIncrease(
-                  ex.previousWeight,
-                  ex.currentWeight,
-                )
-                const doneWell = ex.repsDone >= ex.reps
+                const increase = exerciseProgressPercent(ex)
                 const pr = isPrNow(ex, personalRecords)
-                const vol = exerciseVolumeKg(ex)
+                const bw = isBodyweightExercise(ex)
                 return (
                   <tr
                     key={ex.id}
@@ -375,6 +381,9 @@ export function PerformanceDashboard() {
                         title="Ver como executar"
                       >
                         <span className="truncate">{ex.name}</span>
+                        {bw && (
+                          <BodyweightBadge compact />
+                        )}
                         {pr && (
                           <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
                             <Trophy className="h-3 w-3" />
@@ -401,26 +410,22 @@ export function PerformanceDashboard() {
                       {ex.muscleGroup === 'Cardio' ? (
                         '—'
                       ) : (
-                      <span
-                        className={[
-                          'inline-flex min-w-[2rem] justify-center rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums',
-                          doneWell
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                            : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-                        ].join(' ')}
-                      >
-                        {ex.repsDone}
-                      </span>
+                        <RepsDoneInput
+                          value={ex.repsDone}
+                          onChange={(repsDone) =>
+                            updateExercise(ex.id, { repsDone }, sid)
+                          }
+                        />
                       )}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums text-ink-muted">
-                      {ex.previousWeight > 0 ? `${ex.previousWeight} kg` : '—'}
+                      {bw ? 'PC' : ex.previousWeight > 0 ? `${ex.previousWeight} kg` : '—'}
                     </td>
                     <td className="px-3 py-3 text-center font-semibold tabular-nums text-brand-800 dark:text-brand-200">
-                      {ex.currentWeight > 0 ? `${ex.currentWeight} kg` : '—'}
+                      {bw ? 'PC' : ex.currentWeight > 0 ? `${ex.currentWeight} kg` : '—'}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums">
-                      {vol > 0 ? vol.toLocaleString('pt-BR') : '—'}
+                      {formatExerciseVolume(ex)}
                     </td>
                     <td className="px-3 py-3 text-center">
                       <span
@@ -470,6 +475,8 @@ export function PerformanceDashboard() {
           </table>
         </div>
       </div>
+
+      <StudentEvolutionPanel record={record} studentName={student.name} />
 
       {/* Layout desempenho */}
       <div className="grid gap-4 lg:grid-cols-12">
@@ -595,10 +602,12 @@ export function PerformanceDashboard() {
         </div>
 
         {history.length > 0 && (
-          <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 lg:col-span-12">
-            <h2 className="mb-3 font-display text-lg font-bold text-ink">
-              Treinos passados
-            </h2>
+          <CollapsibleCard
+            title="Treinos passados"
+            subtitle={`${history.length} sessões salvas`}
+            icon={History}
+            className="lg:col-span-12"
+          >
             <div className="table-scroll -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
@@ -651,7 +660,7 @@ export function PerformanceDashboard() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </CollapsibleCard>
         )}
 
         <div className="grid gap-3 sm:grid-cols-3 lg:col-span-12">

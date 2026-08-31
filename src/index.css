@@ -148,8 +148,9 @@ h1, h2, h3, h4, .font-display {
 .login-page::before {
   content: "";
   pointer-events: none;
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 0;
   background: linear-gradient(
     105deg,
     transparent 35%,
@@ -183,8 +184,9 @@ html.dark .login-page::before {
 .login-page::after {
   content: "";
   pointer-events: none;
-  position: absolute;
+  position: fixed;
   inset: -40%;
+  z-index: 0;
   background: repeating-linear-gradient(
     -22deg,
     transparent 0 78px,
@@ -218,8 +220,9 @@ html.dark .login-page::after {
 
 .login-lines {
   pointer-events: none;
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 0;
   overflow: hidden;
 }
 
@@ -512,6 +515,10 @@ html.dark .table-scroll {
   filter: none;
 }
 
+.evolucao-pdf-only {
+  display: none !important;
+}
+
 @media print {
   .no-print {
     display: none !important;
@@ -532,5 +539,91 @@ html.dark .table-scroll {
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
+  }
+
+  body.evolucao-printing .login-lines,
+  body.evolucao-printing .login-page::before,
+  body.evolucao-printing .login-page::after,
+  body.evolucao-printing header {
+    display: none !important;
+  }
+
+  body.evolucao-printing,
+  body.evolucao-printing .login-page,
+  body.evolucao-printing main,
+  body.evolucao-printing main > div {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.evolucao-printing main > div > *:not(#evolucao-mensal) {
+    display: none !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal > div:not(.collapsible-body),
+  body.evolucao-printing #evolucao-mensal > button {
+    display: none !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal .collapsible-body {
+    display: block !important;
+    margin-top: 0 !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal {
+    position: static !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    break-inside: auto;
+  }
+
+  body.evolucao-printing #evolucao-mensal .evolucao-pdf-hero {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-radius: 16px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.evolucao-printing #evolucao-mensal .evolucao-print-sheet {
+    gap: 1rem;
+  }
+
+  body.evolucao-printing #evolucao-mensal .evolucao-print-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.evolucao-printing #evolucao-mensal .chart-frame {
+    height: 180px !important;
+    min-height: 180px !important;
+    max-height: 180px !important;
+    overflow: hidden !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal .recharts-responsive-container {
+    width: 100% !important;
+    height: 180px !important;
+    max-height: 180px !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal svg.recharts-surface {
+    overflow: visible;
+  }
+
+  @page {
+    margin: 12mm;
+    size: auto;
+  }
+
+  body.evolucao-printing .evolucao-pdf-only {
+    display: block !important;
   }
 }

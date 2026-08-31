@@ -78,9 +78,28 @@ export function emptyClock(): SessionClock {
   }
 }
 
+export function isBodyweightExercise(
+  ex: Pick<Exercise, 'bodyweight' | 'muscleGroup'>,
+): boolean {
+  return ex.bodyweight === true && ex.muscleGroup !== 'Cardio'
+}
+
+export function exerciseRepVolume(ex: Exercise): number {
+  if (ex.muscleGroup === 'Cardio') return 0
+  return ex.sets * ex.repsDone
+}
+
 export function exerciseVolumeKg(ex: Exercise): number {
   if (ex.muscleGroup === 'Cardio') return 0
+  if (isBodyweightExercise(ex)) return 0
   return ex.currentWeight * ex.sets * ex.repsDone
+}
+
+export function exerciseProgressPercent(ex: Exercise): number {
+  if (isBodyweightExercise(ex)) {
+    return ex.reps > 0 ? calcIncrease(ex.reps, ex.repsDone) : 0
+  }
+  return calcIncrease(ex.previousWeight, ex.currentWeight)
 }
 
 export function programVolumeKg(exercises: Exercise[]): number {
@@ -187,11 +206,16 @@ export function snapshotSession(
   records: PersonalRecord[],
 ): { session: WorkoutSession; records: PersonalRecord[] } {
   const logs: WorkoutExerciseLog[] = exercises.map((e) => {
-    const volumeKg = exerciseVolumeKg(e)
+    const bw = isBodyweightExercise(e)
+    const volumeKg = bw ? exerciseRepVolume(e) : exerciseVolumeKg(e)
     const prevRecord = records.find((r) => r.exerciseName === e.name)
-    const isPr =
-      e.currentWeight > 0 &&
-      (prevRecord ? e.currentWeight > prevRecord.weight || volumeKg > prevRecord.volumeKg : true)
+    const isPr = bw
+      ? e.repsDone > 0 &&
+        (prevRecord ? e.repsDone > prevRecord.weight : true)
+      : e.currentWeight > 0 &&
+        (prevRecord
+          ? e.currentWeight > prevRecord.weight || volumeKg > prevRecord.volumeKg
+          : true)
     return {
       exerciseId: e.id,
       name: e.name,
@@ -199,10 +223,12 @@ export function snapshotSession(
       sets: e.sets,
       reps: e.reps,
       repsDone: e.repsDone,
-      weight: e.currentWeight,
+      weight: bw ? e.repsDone : e.currentWeight,
       volumeKg,
-      previousWeight: e.previousWeight,
-      increasePercent: calcIncrease(e.previousWeight, e.currentWeight),
+      previousWeight: bw ? e.reps : e.previousWeight,
+      increasePercent: bw
+        ? calcIncrease(e.reps, e.repsDone)
+        : calcIncrease(e.previousWeight, e.currentWeight),
       isPr,
     }
   })
@@ -287,8 +313,13 @@ export function sessionMuscleVolume(session: WorkoutSession) {
 }
 
 export function isPrNow(ex: Exercise, records: PersonalRecord[]): boolean {
-  if (ex.currentWeight <= 0) return false
   const rec = records.find((r) => r.exerciseName === ex.name)
+  if (isBodyweightExercise(ex)) {
+    if (ex.repsDone <= 0) return false
+    if (!rec) return true
+    return ex.repsDone > rec.weight
+  }
+  if (ex.currentWeight <= 0) return false
   if (!rec) return true
   return ex.currentWeight > rec.weight || exerciseVolumeKg(ex) > rec.volumeKg
 }

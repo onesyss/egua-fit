@@ -24,6 +24,8 @@ export interface Exercise {
   incline?: number
   /** Treino A–E da divisão */
   day?: TrainingDay
+  /** Exercício de peso corporal (sem carga externa) */
+  bodyweight?: boolean
 }
 
 export type TrainingDay = 'A' | 'B' | 'C' | 'D' | 'E'

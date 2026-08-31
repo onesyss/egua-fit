@@ -26,7 +26,7 @@ export function Layout() {
             : 'Local'
 
   return (
-    <div className="login-page relative min-h-screen overflow-x-clip">
+    <div className="login-page relative overflow-x-clip">
       <BrandBackdrop />
       <header className="tech-header sticky top-0 z-50 no-print">
         <div
