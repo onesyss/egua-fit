@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   CalendarDays,
@@ -15,7 +15,7 @@ import {
   Weight,
 } from 'lucide-react'
 import { useGym } from '../context/DataContext'
-import { energyLabel, formatDate } from '../data/mock'
+import { energyLabel, formatDate, recomputeMetrics } from '../data/mock'
 import {
   ExerciseCompareBars,
   FrequencyDonut,
@@ -42,11 +42,13 @@ import {
   cardioMinutes,
   exerciseDay,
   exerciseProgressPercent,
+  firstTrainingDayWithExercises,
   formatDuration,
   historyVolumePoints,
   isBodyweightExercise,
   isPrNow,
   musclesWorked,
+  parseTrainingDay,
 } from '../lib/training'
 import type { TrainingDay } from '../types'
 import { dayGreeting } from '../lib/greeting'
@@ -88,8 +90,9 @@ export function PerformanceDashboard() {
     pauseWork,
   } = useGym()
   const record = students.find((s) => s.student.id === studentId)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const trainingDay = parseTrainingDay(searchParams.get('treino'))
   const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')
-  const [trainingDay, setTrainingDay] = useState<TrainingDay>('A')
   const [energyLevel, setEnergyLevel] = useState(8)
   const [flashMsg, setFlashMsg] = useState<string | null>(null)
   const [guideExercise, setGuideExercise] = useState<{
@@ -110,6 +113,10 @@ export function PerformanceDashboard() {
     window.setTimeout(() => setFlashMsg(null), 2000)
   }
 
+  const setTrainingDay = (day: TrainingDay) => {
+    setSearchParams(day === 'A' ? {} : { treino: day })
+  }
+
   const dayExercises = useMemo(() => {
     if (!record) return []
     return record.exercises.filter((e) => exerciseDay(e) === trainingDay)
@@ -120,14 +127,28 @@ export function PerformanceDashboard() {
     return dayExercises.filter((e) => e.muscleGroup === muscleFilter)
   }, [dayExercises, muscleFilter])
 
+  useEffect(() => {
+    if (!record || dayExercises.length > 0) return
+    const fallback = firstTrainingDayWithExercises(record.exercises)
+    if (fallback && fallback !== trainingDay) {
+      setTrainingDay(fallback)
+    }
+  }, [record, dayExercises.length, trainingDay])
+
   if (!record) return <Navigate to="/" replace />
 
-  const { student, exercises, metrics, evolution, history, personalRecords } =
-    record
+  const { student, metrics, evolution, history, personalRecords } = record
   const sid = student.id
+  const dayMetrics = useMemo(
+    () =>
+      recomputeMetrics(dayExercises, metrics.frequency, metrics.energyLevel),
+    [dayExercises, metrics.frequency, metrics.energyLevel],
+  )
   const freqPercent = Math.min(Math.round((metrics.frequency / 5) * 100), 100)
   const volumePoints = historyVolumePoints(history)
-  const muscles = musclesWorked(exercises)
+  const muscles = musclesWorked(dayExercises)
+  const treinoQuery =
+    trainingDay === 'A' ? '' : `?treino=${trainingDay}`
 
   return (
     <div className="space-y-5">
@@ -216,10 +237,30 @@ export function PerformanceDashboard() {
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold text-ink">
+              Treino do dia
+            </h2>
+            <p className="text-sm text-ink-muted">
+              Selecione A, B ou C — só os exercícios deste treino aparecem abaixo
+            </p>
+          </div>
+        </div>
+        <WorkoutDayTabs
+          exercises={record.exercises}
+          value={trainingDay}
+          onChange={setTrainingDay}
+          hideEmpty
+        />
+      </div>
+
+      <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-bold text-ink">
               Sessão de treino
             </h2>
             <p className="text-sm text-ink-muted">
-              Tempo da sessão, tempo de trabalho e energia do aluno
+              Treino {trainingDay} · {dayExercises.length} exercício
+              {dayExercises.length === 1 ? '' : 's'} · tempo, energia e salvar sessão
             </p>
           </div>
           <button
@@ -306,14 +347,6 @@ export function PerformanceDashboard() {
           >
             Editar Treino {trainingDay} →
           </Link>
-        </div>
-
-        <div className="mb-3">
-          <WorkoutDayTabs
-            exercises={exercises}
-            value={trainingDay}
-            onChange={setTrainingDay}
-          />
         </div>
 
         <MuscleGroupFilter
@@ -484,15 +517,15 @@ export function PerformanceDashboard() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard
               title="Carga levantada"
-              value={metrics.totalLoad.toLocaleString('pt-BR', {
+              value={dayMetrics.totalLoad.toLocaleString('pt-BR', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2,
               })}
               unit="kg"
             />
-            <StatCard title="Total Exercícios" value={metrics.totalExercises} />
-            <StatCard title="Quantidade de séries" value={metrics.totalSets} />
-            <StatCard title="%AC" value={`${metrics.acPercent}%`} />
+            <StatCard title="Exercícios do treino" value={dayMetrics.totalExercises} />
+            <StatCard title="Quantidade de séries" value={dayMetrics.totalSets} />
+            <StatCard title="%AC" value={`${dayMetrics.acPercent}%`} />
           </div>
 
           <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
@@ -563,7 +596,7 @@ export function PerformanceDashboard() {
             Músculos trabalhados
           </h2>
           <p className="mb-2 text-xs text-ink-muted">
-            Volume por grupo muscular no programa atual
+            Volume por grupo muscular no Treino {trainingDay}
           </p>
           <div className="chart-frame h-[200px] sm:h-[260px]">
             {muscles.length > 0 ? (
@@ -580,18 +613,18 @@ export function PerformanceDashboard() {
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Layers className="h-4 w-4 text-ink-muted" />
             <h2 className="font-display text-lg font-bold text-ink">
-              Planejado × realizado por exercício
+              Planejado × realizado · Treino {trainingDay}
             </h2>
           </div>
           <div className="chart-frame h-[240px] sm:h-[300px]">
-            {exercises.length > 0 ? (
-              <ExerciseCompareBars exercises={exercises} />
+            {dayExercises.length > 0 ? (
+              <ExerciseCompareBars exercises={dayExercises} />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-ink-muted">
                 <Dumbbell className="h-8 w-8 opacity-40" />
                 <p>Nenhum exercício montado ainda.</p>
                 <Link
-                  to={`/aluno/${student.id}/treino`}
+                  to={`/aluno/${student.id}/treino${treinoQuery}`}
                   className="text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300"
                 >
                   Ir para montar treino
@@ -667,26 +700,26 @@ export function PerformanceDashboard() {
           <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/90">
             <Weight className="h-5 w-5 text-brand-600" />
             <div>
-              <p className="text-xs text-ink-muted">Carga levantada</p>
+              <p className="text-xs text-ink-muted">Carga · Treino {trainingDay}</p>
               <p className="font-mono font-bold text-ink">
-                {metrics.totalLoad.toLocaleString('pt-BR')} kg
+                {dayMetrics.totalLoad.toLocaleString('pt-BR')} kg
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/90">
             <Dumbbell className="h-5 w-5 text-[#b33a3a]" />
             <div>
-              <p className="text-xs text-ink-muted">Exercícios no programa</p>
+              <p className="text-xs text-ink-muted">Exercícios do treino</p>
               <p className="font-mono font-bold text-ink">
-                {metrics.totalExercises}
+                {dayMetrics.totalExercises}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/90">
             <Percent className="h-5 w-5 text-brand-600" />
             <div>
-              <p className="text-xs text-ink-muted">% de acerto / conclusão</p>
-              <p className="font-mono font-bold text-ink">{metrics.acPercent}%</p>
+              <p className="text-xs text-ink-muted">% conclusão · Treino {trainingDay}</p>
+              <p className="font-mono font-bold text-ink">{dayMetrics.acPercent}%</p>
             </div>
           </div>
         </div>

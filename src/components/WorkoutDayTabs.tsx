@@ -5,14 +5,24 @@ export function WorkoutDayTabs({
   exercises,
   value,
   onChange,
+  hideEmpty = false,
 }: {
   exercises: Exercise[]
   value: TrainingDay
   onChange: (day: TrainingDay) => void
+  /** Na visualização do treino, oculta abas A–E sem exercícios */
+  hideEmpty?: boolean
 }) {
+  const days = hideEmpty
+    ? TRAINING_DAYS.filter((day) =>
+        exercises.some((e) => exerciseDay(e) === day),
+      )
+    : TRAINING_DAYS
+  const visibleDays = days.length > 0 ? days : TRAINING_DAYS
+
   return (
     <div className="flex flex-wrap gap-1.5">
-      {TRAINING_DAYS.map((day) => {
+      {visibleDays.map((day) => {
         const count = exercises.filter((e) => exerciseDay(e) === day).length
         const active = value === day
         return (

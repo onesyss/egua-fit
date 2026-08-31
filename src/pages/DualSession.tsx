@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trophy, UsersRound } from 'lucide-react'
 import { useGym } from '../context/DataContext'
@@ -16,6 +16,7 @@ import type { Exercise, StudentRecord, TrainingDay } from '../types'
 import {
   exerciseDay,
   exerciseProgressPercent,
+  firstTrainingDayWithExercises,
   isBodyweightExercise,
   isPrNow,
   musclesWorked,
@@ -32,7 +33,15 @@ function DualPane({ record }: { record: StudentRecord }) {
     updateExercise,
   } = useGym()
   const sid = record.student.id
-  const [trainingDay, setTrainingDay] = useState<TrainingDay>('A')
+  const [trainingDay, setTrainingDay] = useState<TrainingDay>(() => {
+    return firstTrainingDayWithExercises(record.exercises) ?? 'A'
+  })
+
+  useEffect(() => {
+    if (record.exercises.some((e) => exerciseDay(e) === trainingDay)) return
+    const fallback = firstTrainingDayWithExercises(record.exercises)
+    if (fallback) setTrainingDay(fallback)
+  }, [record.exercises, trainingDay])
 
   const dayExercises = useMemo(
     () => record.exercises.filter((e) => exerciseDay(e) === trainingDay),
@@ -77,6 +86,7 @@ function DualPane({ record }: { record: StudentRecord }) {
           exercises={record.exercises}
           value={trainingDay}
           onChange={setTrainingDay}
+          hideEmpty
         />
       </div>
 

@@ -29,6 +29,7 @@ import {
   exerciseDay,
   isBodyweightExercise,
   exerciseProgressPercent,
+  parseTrainingDay,
 } from '../lib/training'
 import {
   BodyweightBadge,
@@ -54,13 +55,7 @@ const emptyForm = {
 export function TrainerDashboard() {
   const { studentId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const trainingDay: TrainingDay =
-    searchParams.get('treino') === 'B' ||
-    searchParams.get('treino') === 'C' ||
-    searchParams.get('treino') === 'D' ||
-    searchParams.get('treino') === 'E'
-      ? (searchParams.get('treino') as TrainingDay)
-      : 'A'
+  const trainingDay = parseTrainingDay(searchParams.get('treino'))
   const {
     students,
     setActiveId,
@@ -124,6 +119,12 @@ export function TrainerDashboard() {
     })
   }, [record])
 
+  useEffect(() => {
+    if (!editingId) {
+      setForm((f) => (f.day === trainingDay ? f : { ...f, day: trainingDay }))
+    }
+  }, [trainingDay, editingId])
+
   const dayExercises = useMemo(() => {
     if (!record) return []
     return record.exercises.filter((e) => exerciseDay(e) === trainingDay)
@@ -186,7 +187,7 @@ export function TrainerDashboard() {
             currentWeight: 0,
             durationMin: Number(form.durationMin) || 0,
             incline: form.useIncline ? Number(form.incline) || 0 : undefined,
-            day: form.day,
+            day: trainingDay,
           }
         : {
             muscleGroup: form.muscleGroup,
@@ -199,7 +200,7 @@ export function TrainerDashboard() {
             bodyweight: form.bodyweight,
             durationMin: undefined,
             incline: undefined,
-            day: form.day,
+            day: trainingDay,
           }
     if (editingId) {
       updateExercise(editingId, payload, sid)
@@ -932,14 +933,14 @@ export function TrainerDashboard() {
         </div>
       </Panel>
 
-      {record.exercises.length > 0 && (
+      {dayExercises.length > 0 && (
         <Panel>
           <SectionTitle
             title="Músculos trabalhados"
-            subtitle="Volume por grupo no programa atual"
+            subtitle={`Volume por grupo no Treino ${trainingDay}`}
           />
           <div className="chart-frame h-[200px] sm:h-[240px]">
-            <MusclesWorkedBars data={musclesWorked(record.exercises)} />
+            <MusclesWorkedBars data={musclesWorked(dayExercises)} />
           </div>
         </Panel>
       )}

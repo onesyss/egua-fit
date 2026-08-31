@@ -18,6 +18,23 @@ export function exerciseDay(exercise: Exercise): TrainingDay {
     : 'A'
 }
 
+export function parseTrainingDay(value: string | null | undefined): TrainingDay {
+  if (value === 'B' || value === 'C' || value === 'D' || value === 'E') {
+    return value
+  }
+  return 'A'
+}
+
+export function firstTrainingDayWithExercises(
+  exercises: Exercise[],
+): TrainingDay | null {
+  return (
+    TRAINING_DAYS.find((day) =>
+      exercises.some((e) => exerciseDay(e) === day),
+    ) ?? null
+  )
+}
+
 export function calcIncrease(previous: number, current: number): number {
   if (previous === 0) return current > 0 ? 100 : 0
   return Number((((current - previous) / previous) * 100).toFixed(1))
