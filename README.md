@@ -45,6 +45,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 
 No SQL Editor do Supabase, rode o arquivo `supabase/schema.sql` para criar a tabela e isolar os alunos por personal.
 
+Para o **link público da evolução mensal** (WhatsApp/e-mail), a tabela `evolution_shares` também precisa existir — ela já está no final do `schema.sql`. Se o banco já estava criado, rode só o arquivo `supabase/evolution_shares.sql`.
+
 ## Stack
 
 React + TypeScript (Vite) · Tailwind CSS v4 · Recharts · React Router · Supabase

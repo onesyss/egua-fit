@@ -135,15 +135,20 @@ export function PerformanceDashboard() {
     }
   }, [record, dayExercises.length, trainingDay])
 
+  const dayMetrics = useMemo(
+    () =>
+      recomputeMetrics(
+        dayExercises,
+        record?.metrics.frequency ?? 0,
+        record?.metrics.energyLevel ?? 0,
+      ),
+    [dayExercises, record?.metrics.frequency, record?.metrics.energyLevel],
+  )
+
   if (!record) return <Navigate to="/" replace />
 
   const { student, metrics, evolution, history, personalRecords } = record
   const sid = student.id
-  const dayMetrics = useMemo(
-    () =>
-      recomputeMetrics(dayExercises, metrics.frequency, metrics.energyLevel),
-    [dayExercises, metrics.frequency, metrics.energyLevel],
-  )
   const freqPercent = Math.min(Math.round((metrics.frequency / 5) * 100), 100)
   const volumePoints = historyVolumePoints(history)
   const muscles = musclesWorked(dayExercises)

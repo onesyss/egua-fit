@@ -211,10 +211,17 @@ export function whatsappHref(phone: string, text: string): string | null {
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
 }
 
-export function mailtoHref(email: string, studentName: string, text: string): string | null {
+export function mailtoHref(
+  email: string,
+  studentName: string,
+  text: string,
+  subjectOverride?: string,
+): string | null {
   const to = email.trim()
   if (!isValidEmail(to)) return null
-  const subject = encodeURIComponent(`Égua Fit — Relatório de ${studentName}`)
+  const subject = encodeURIComponent(
+    subjectOverride ?? `Égua Fit — Relatório de ${studentName}`,
+  )
   const body = encodeURIComponent(text)
   return `mailto:${to}?subject=${subject}&body=${body}`
 }

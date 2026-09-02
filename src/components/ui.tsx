@@ -101,6 +101,8 @@ export function CollapsibleCard({
   subtitle,
   icon: Icon,
   defaultOpen = false,
+  open: openProp,
+  onOpenChange,
   children,
   className = '',
   id,
@@ -110,12 +112,20 @@ export function CollapsibleCard({
   subtitle?: string
   icon?: LucideIcon
   defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   children: ReactNode
   className?: string
   id?: string
   headerExtra?: ReactNode
 }) {
-  const [open, setOpen] = useState(defaultOpen)
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen)
+  const open = openProp ?? uncontrolledOpen
+  const setOpen = (value: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof value === 'function' ? value(open) : value
+    if (openProp === undefined) setUncontrolledOpen(next)
+    onOpenChange?.(next)
+  }
   const toggle = () => setOpen((value) => !value)
 
   return (

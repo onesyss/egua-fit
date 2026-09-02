@@ -66,6 +66,7 @@ export function StudentEvolutionPanel({
   const { updateStudent } = useGym()
   const months = useMemo(() => availableMonths(record), [record])
   const [monthKey, setMonthKey] = useState('')
+  const [panelOpen, setPanelOpen] = useState(false)
 
   useEffect(() => {
     if (months.length && !months.some((m) => m.key === monthKey)) {
@@ -136,6 +137,8 @@ export function StudentEvolutionPanel({
       subtitle="Resumo mensal de força, aparelhos e frequência"
       icon={TrendingUp}
       headerExtra={headerExtra}
+      open={panelOpen}
+      onOpenChange={setPanelOpen}
     >
       <div className="no-print">
         {selected && (

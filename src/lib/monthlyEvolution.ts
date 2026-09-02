@@ -293,9 +293,7 @@ export function evolutionCelebrationMessage(
       `Você registrou ${data.frequency.sessions} treino${data.frequency.sessions > 1 ? 's' : ''} em ${data.label}. ` +
       'Cada sessão conta. No próximo ciclo, vamos empurrar juntos força, aparelhos e frequência.'
   } else {
-    message =
-      `${firstName}, este relatório está pronto para acompanhar sua jornada. ` +
-      'Salve seus treinos ao longo do mês e veja aqui, em números, o quanto você evoluiu.'
+    message = `${firstName}, este relatório está pronto para acompanhar sua jornada.`
   }
 
   if (goal?.trim()) {

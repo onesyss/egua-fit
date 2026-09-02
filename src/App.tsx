@@ -14,6 +14,7 @@ import { AnamnesePage } from './pages/AnamnesePage'
 import { ReportPage } from './pages/ReportPage'
 import { DualSession } from './pages/DualSession'
 import { WeightDetailsPage } from './pages/WeightDetailsPage'
+import { SharedEvolutionPage } from './pages/SharedEvolutionPage'
 
 export default function App() {
   const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined
@@ -24,6 +25,7 @@ export default function App() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/evolucao/:shareId" element={<SharedEvolutionPage />} />
             <Route element={<RequireAuth />}>
               <Route element={<Layout />}>
                 <Route index element={<StudentsPanel />} />
