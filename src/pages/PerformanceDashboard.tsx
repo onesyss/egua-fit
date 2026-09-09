@@ -44,11 +44,13 @@ import {
   exerciseProgressPercent,
   firstTrainingDayWithExercises,
   formatDuration,
+  historyRepsPoints,
   historyVolumePoints,
   isBodyweightExercise,
   isPrNow,
   musclesWorked,
   parseTrainingDay,
+  weeklyFrequencyFromHistory,
 } from '../lib/training'
 import type { TrainingDay } from '../types'
 import { dayGreeting } from '../lib/greeting'
@@ -147,10 +149,19 @@ export function PerformanceDashboard() {
 
   if (!record) return <Navigate to="/" replace />
 
-  const { student, metrics, evolution, history, personalRecords } = record
+  const { student, metrics, history, personalRecords } = record
   const sid = student.id
-  const freqPercent = Math.min(Math.round((metrics.frequency / 5) * 100), 100)
+  const weeklyFreq = weeklyFrequencyFromHistory(history)
+  const freqGoal = Math.max(
+    1,
+    record.anamnesis.availabilityPerWeek || metrics.frequency || 5,
+  )
+  const freqPercent = Math.min(
+    Math.round((weeklyFreq / freqGoal) * 100),
+    100,
+  )
   const volumePoints = historyVolumePoints(history)
+  const repsPoints = historyRepsPoints(history)
   const muscles = musclesWorked(dayExercises)
   const treinoQuery =
     trainingDay === 'A' ? '' : `?treino=${trainingDay}`
@@ -541,7 +552,13 @@ export function PerformanceDashboard() {
               <Percent className="h-4 w-4 text-ink-muted" />
             </div>
             <div className="chart-frame h-[200px] sm:h-[240px]">
-              <PerformanceRepsChart data={evolution.repsSessions} />
+              {repsPoints.length > 0 ? (
+                <PerformanceRepsChart data={repsPoints} />
+              ) : (
+                <p className="flex h-full items-center justify-center text-sm text-ink-muted">
+                  Salve um treino para ver o desempenho.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -552,7 +569,9 @@ export function PerformanceDashboard() {
               Frequência
             </h2>
             <p className="mb-2 text-xs text-ink-muted">
-              {metrics.frequency}x por semana (meta 5x)
+              {weeklyFreq > 0
+                ? `${weeklyFreq}x por semana (meta ${freqGoal}x)`
+                : `Meta ${freqGoal}x por semana · salve treinos para medir`}
             </p>
             <FrequencyDonut percent={freqPercent} />
           </div>

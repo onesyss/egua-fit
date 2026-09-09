@@ -1,29 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Mail, MessageCircle } from 'lucide-react'
+import { Link, MessageCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import type { StudentRecord } from '../types'
 import {
-  computeMonthlyEvolution,
   evolutionCelebrationMessage,
+  toShareableEvolution,
   type MonthlyEvolution,
 } from '../lib/monthlyEvolution'
 import { createEvolutionShare } from '../lib/evolutionShareStore'
-import {
-  isValidEmail,
-  mailtoHref,
-  whatsappHref,
-} from '../lib/reportShare'
+import { whatsappHref } from '../lib/reportShare'
 
 function shareMessage(
   studentName: string,
-  monthLabel: string,
+  periodLabel: string,
   url: string,
   note: string,
 ): string {
   const first = studentName.split(' ')[0] || studentName
   const parts = [
     note.trim() ||
-      `Oi, ${first}! Segue o link da sua evolução de ${monthLabel} no Égua Fit:`,
+      `Oi, ${first}! Segue o link da sua evolução (${periodLabel}) no Égua Fit:`,
     '',
     url,
     '',
@@ -34,18 +30,23 @@ function shareMessage(
 
 export function EvolutionShare({
   record,
-  year,
-  month,
+  data,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
   onSaveContact,
 }: {
   record: StudentRecord
-  year: number
-  month: number
-  onSaveContact: (patch: { phone?: string; email?: string }) => void
+  data: MonthlyEvolution
+  startDate: string
+  endDate: string
+  onStartDateChange: (value: string) => void
+  onEndDateChange: (value: string) => void
+  onSaveContact: (patch: { phone?: string }) => void
 }) {
   const { user } = useAuth()
   const [phone, setPhone] = useState(record.student.phone ?? '')
-  const [email, setEmail] = useState(record.student.email ?? '')
   const [note, setNote] = useState('')
   const [headline, setHeadline] = useState('')
   const [coverMessage, setCoverMessage] = useState('')
@@ -56,13 +57,7 @@ export function EvolutionShare({
 
   useEffect(() => {
     setPhone(record.student.phone ?? '')
-    setEmail(record.student.email ?? '')
-  }, [record.student.id, record.student.phone, record.student.email])
-
-  const data: MonthlyEvolution = useMemo(
-    () => computeMonthlyEvolution(record, year, month),
-    [record, year, month],
-  )
+  }, [record.student.id, record.student.phone])
 
   const defaults = useMemo(
     () =>
@@ -83,14 +78,17 @@ export function EvolutionShare({
     if (!user?.id) {
       throw new Error('Faça login para gerar o link do relatório.')
     }
+    if (!startDate || !endDate) {
+      throw new Error('Informe a data de início e a data de fim do relatório.')
+    }
     const { url } = await createEvolutionShare({
       userId: user.id,
       studentId: record.student.id,
       studentName: record.student.name,
-      year,
-      month,
+      year: data.year,
+      month: data.month,
       goal: record.anamnesis.goal,
-      data,
+      data: toShareableEvolution(data),
       headline: headline.trim() || defaults.headline,
       message: coverMessage.trim() || defaults.message,
     })
@@ -113,7 +111,7 @@ export function EvolutionShare({
       const url = await ensureShareLink()
       const message = shareMessage(
         record.student.name,
-        data.label,
+        data.periodLabel,
         url,
         note,
       )
@@ -139,52 +137,6 @@ export function EvolutionShare({
     }
   }
 
-  const sendEmail = async () => {
-    if (!isValidEmail(email)) {
-      setError('Informe um e-mail válido.')
-      setHint(null)
-      return
-    }
-
-    setBusy(true)
-    setError(null)
-    setHint('Gerando o link do relatório…')
-
-    try {
-      const url = await ensureShareLink()
-      const message = shareMessage(
-        record.student.name,
-        data.label,
-        url,
-        note,
-      )
-      onSaveContact({ email: email.trim() })
-
-      const href = mailtoHref(
-        email,
-        record.student.name,
-        message,
-        `Égua Fit — Evolução mensal (${data.label})`,
-      )
-      if (!href) {
-        setError('Informe um e-mail válido.')
-        return
-      }
-
-      setHint('Link pronto. Abrindo o e-mail…')
-      window.location.href = href
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Não foi possível gerar o link do relatório.',
-      )
-      setHint(null)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const copyLink = async () => {
     setBusy(true)
     setError(null)
@@ -192,7 +144,7 @@ export function EvolutionShare({
     try {
       const url = await ensureShareLink()
       await navigator.clipboard.writeText(url)
-      setHint('Link copiado. Cole no WhatsApp ou e-mail.')
+      setHint('Link copiado. Cole no WhatsApp.')
     } catch (err) {
       setError(
         err instanceof Error
@@ -211,11 +163,40 @@ export function EvolutionShare({
   return (
     <div className="no-print mb-4 rounded-2xl border border-brand-100 bg-brand-50/40 p-4 dark:border-slate-800 dark:bg-slate-950/50">
       <h3 className="font-display text-base font-bold text-ink">
-        Enviar evolução mensal ao aluno
+        Enviar evolução ao aluno
       </h3>
       <p className="mt-1 text-sm text-ink-muted">
-        Edite a capa do relatório, depois envie o link no WhatsApp ou e-mail.
+        Escolha o período, edite a capa e envie o link pelo WhatsApp.
       </p>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-ink-muted">
+            Data início
+          </span>
+          <input
+            type="date"
+            className={field}
+            value={startDate}
+            max={endDate}
+            onChange={(e) => onStartDateChange(e.target.value)}
+            disabled={busy}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-ink-muted">
+            Data fim
+          </span>
+          <input
+            type="date"
+            className={field}
+            value={endDate}
+            min={startDate}
+            onChange={(e) => onEndDateChange(e.target.value)}
+            disabled={busy}
+          />
+        </label>
+      </div>
 
       <div className="mt-3 grid gap-3">
         <label className="block">
@@ -243,7 +224,7 @@ export function EvolutionShare({
         </label>
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-ink-muted">
-            Mensagem do WhatsApp / e-mail (opcional)
+            Mensagem do WhatsApp (opcional)
           </span>
           <textarea
             className={`${field} min-h-[64px]`}
@@ -255,56 +236,31 @@ export function EvolutionShare({
         </label>
       </div>
 
-      <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <label className="block min-w-0 flex-1">
-            <span className="mb-1 block text-xs font-semibold text-ink-muted">
-              WhatsApp
-            </span>
-            <input
-              className={field}
-              inputMode="tel"
-              placeholder="11999998888"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={busy}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => void sendWhatsApp()}
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+        <label className="block min-w-0 flex-1">
+          <span className="mb-1 block text-xs font-semibold text-ink-muted">
+            WhatsApp
+          </span>
+          <input
+            className={field}
+            inputMode="tel"
+            placeholder="11999998888"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             disabled={busy}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#128C7E] px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-[#0e7368] disabled:opacity-60"
-          >
-            <MessageCircle className="h-4 w-4" />
-            {busy ? 'Gerando…' : 'Enviar no Zap'}
-          </button>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <label className="block min-w-0 flex-1">
-            <span className="mb-1 block text-xs font-semibold text-ink-muted">
-              E-mail
-            </span>
-            <input
-              type="email"
-              className={field}
-              placeholder="aluno@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={busy}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => void sendEmail()}
-            disabled={busy || (email.trim() !== '' && !isValidEmail(email))}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#2c4566] px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-[#233650] disabled:opacity-50"
-          >
-            <Mail className="h-4 w-4" />
-            {busy ? 'Gerando…' : 'Enviar e-mail'}
-          </button>
-        </div>
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => void sendWhatsApp()}
+          disabled={busy}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#128C7E] px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-[#0e7368] disabled:opacity-60"
+        >
+          <MessageCircle className="h-4 w-4" />
+          {busy ? 'Gerando…' : 'Enviar no Zap'}
+        </button>
       </div>
+
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"

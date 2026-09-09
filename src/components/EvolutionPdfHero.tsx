@@ -72,7 +72,7 @@ export function EvolutionPdfHero({
         </h2>
         {showMonth && (
           <p className="mt-2 text-sm font-medium capitalize text-white/85 sm:text-base">
-            {data.label}
+            {data.periodLabel ?? data.label}
           </p>
         )}
 

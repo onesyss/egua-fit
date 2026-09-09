@@ -228,16 +228,38 @@ export function RunningChart({ data }: { data: ChartPoint[] }) {
   )
 }
 
-export function AbsBarChart({ data }: { data: ChartPoint[] }) {
+export function AbsBarChart({
+  data,
+  seriesName = 'Valor',
+}: {
+  data: ChartPoint[]
+  seriesName?: string
+}) {
   const t = useChartTheme()
+  const mobile = useIsMobile()
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart
+        data={data}
+        margin={{ top: 8, right: mobile ? 4 : 8, left: 0, bottom: 0 }}
+      >
         <CartesianGrid strokeDasharray="3 6" stroke={t.grid} vertical={false} />
-        <XAxis dataKey="month" tick={{ fill: t.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: t.tick, fontSize: 11 }} axisLine={false} tickLine={false} width={28} />
+        <XAxis
+          dataKey="month"
+          tick={{ fill: t.tick, fontSize: mobile ? 9 : 11 }}
+          axisLine={false}
+          tickLine={false}
+          interval="preserveStartEnd"
+        />
+        <YAxis
+          allowDecimals={false}
+          tick={{ fill: t.tick, fontSize: mobile ? 9 : 11 }}
+          axisLine={false}
+          tickLine={false}
+          width={mobile ? 24 : 28}
+        />
         <Tooltip contentStyle={t.tooltip} />
-        <Bar dataKey="value" name="Abs" fill={t.red} radius={[4, 4, 0, 0]} />
+        <Bar dataKey="value" name={seriesName} fill={t.red} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

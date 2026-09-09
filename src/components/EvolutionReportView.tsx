@@ -1,9 +1,16 @@
 import type { ReactNode } from 'react'
 import { CalendarRange, Dumbbell, Repeat, TrendingUp } from 'lucide-react'
-import type { MonthlyEvolution } from '../lib/monthlyEvolution'
-import { formatEvolutionPct } from '../lib/monthlyEvolution'
+import {
+  ensureEvolutionCharts,
+  formatEvolutionPct,
+  type MonthlyEvolution,
+} from '../lib/monthlyEvolution'
 import { EvolutionPdfHero } from './EvolutionPdfHero'
-import { AbsBarChart, VolumeHistoryChart } from './Charts'
+import {
+  AbsBarChart,
+  PerformanceRepsChart,
+  VolumeHistoryChart,
+} from './Charts'
 
 function ImprovementCard({
   title,
@@ -73,7 +80,7 @@ function ChartBlock({
 }
 
 export function EvolutionReportView({
-  data,
+  data: rawData,
   studentName,
   goal,
   showHero = true,
@@ -86,16 +93,19 @@ export function EvolutionReportView({
   studentName: string
   goal?: string
   showHero?: boolean
-  /** Visual de folha/PDF (página pública do aluno) */
   documentStyle?: boolean
   emittedAt?: string
   headline?: string
   message?: string
 }) {
-  const hasVolume = data.volumePoints.length > 0
+  const data = ensureEvolutionCharts(rawData)
+  const hasVolume = (data.volumePoints?.length ?? 0) > 0
+  const hasPerformance =
+    (data.performancePoints ?? []).some((p) => p.planned > 0 || p.done > 0) ||
+    (data.performancePoints?.length ?? 0) > 0
   const hasFrequency =
-    data.frequencyByWeek.length > 0 || data.frequency.sessions > 0
-  const hasApparatus = data.apparatusChart.length > 0
+    (data.frequencyByWeek?.length ?? 0) > 0 || data.frequency.sessions > 0
+  const hasApparatus = (data.apparatusChart?.length ?? 0) > 0
   const emittedLabel = emittedAt
     ? new Date(emittedAt).toLocaleDateString('pt-BR', {
         day: '2-digit',
@@ -124,10 +134,10 @@ export function EvolutionReportView({
 
       <div>
         <h3 className="font-display text-lg font-bold tracking-tight text-slate-900">
-          Seus números do mês
+          Evolução desde o início
         </h3>
         <p className="mt-1 text-sm text-slate-500">
-          Mensurações, evolução e gráficos de {data.label}
+          {data.periodLabel ?? data.label} · desempenho e frequência por treino
         </p>
       </div>
 
@@ -159,7 +169,7 @@ export function EvolutionReportView({
       <div className="grid gap-3 sm:grid-cols-3">
         <ImprovementCard
           title="Força"
-          subtitle="Carga levantada (1ª → última sessão)"
+          subtitle="Carga 1ª → última sessão do período"
           pct={data.strength.pct}
           detail={`${data.strength.startKg.toLocaleString('pt-BR')} kg → ${data.strength.endKg.toLocaleString('pt-BR')} kg`}
           icon={Dumbbell}
@@ -172,14 +182,14 @@ export function EvolutionReportView({
           detail={
             data.apparatus.details.length
               ? `${data.apparatus.details.length} exercícios comparados`
-              : 'Ainda sem comparação de aparelhos neste mês'
+              : 'Ainda sem comparação de aparelhos'
           }
           icon={TrendingUp}
           accent="red"
         />
         <ImprovementCard
           title="Frequência"
-          subtitle="Treinos vs mês anterior · meta mensal"
+          subtitle="Treinos no período · meta acumulada"
           pct={data.frequency.pct}
           detail={`${data.frequency.sessions} treinos · meta ${data.frequency.goal} (${data.frequency.achievementPct}%)`}
           icon={Repeat}
@@ -189,12 +199,12 @@ export function EvolutionReportView({
 
       <div>
         <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-slate-900">
-          Gráficos do mês
+          Gráficos do período
         </h3>
         <div className="grid gap-5 sm:grid-cols-2">
           <ChartBlock
-            title="Carga levantada no mês"
-            empty="Nenhum treino salvo neste mês."
+            title="Carga levantada por treino"
+            empty="Nenhum treino salvo ainda."
           >
             {hasVolume ? (
               <div className="chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2">
@@ -204,24 +214,40 @@ export function EvolutionReportView({
           </ChartBlock>
 
           <ChartBlock
-            title="Frequência por semana"
-            empty="Sem treinos registrados neste mês."
+            title="Desempenho por treino (reps)"
+            empty="Sem dados de desempenho ainda."
+          >
+            {hasPerformance ? (
+              <div className="chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2">
+                <PerformanceRepsChart data={data.performancePoints} />
+              </div>
+            ) : undefined}
+          </ChartBlock>
+
+          <ChartBlock
+            title="Frequência por dia"
+            empty="Sem treinos registrados."
           >
             {hasFrequency ? (
               <div className="chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2">
-                <AbsBarChart data={data.frequencyByWeek} />
+                <AbsBarChart
+                  data={data.frequencyByWeek}
+                  seriesName="Treinos"
+                />
               </div>
             ) : undefined}
           </ChartBlock>
 
           <ChartBlock
             title="Evolução nos aparelhos (% de carga)"
-            empty="Compare o primeiro e o último treino do mês com cargas registradas."
-            wide
+            empty="Compare cargas do mesmo exercício em treinos diferentes no período."
           >
             {hasApparatus ? (
               <div className="chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2">
-                <AbsBarChart data={data.apparatusChart} />
+                <AbsBarChart
+                  data={data.apparatusChart}
+                  seriesName="% carga"
+                />
               </div>
             ) : undefined}
           </ChartBlock>
@@ -266,7 +292,7 @@ export function EvolutionReportView({
       {documentStyle && (
         <footer className="border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
           <p className="font-semibold tracking-wide text-slate-700 uppercase">
-            Égua Fit · Relatório mensal
+            Égua Fit · Relatório de evolução
           </p>
           <p className="mt-1">
             {studentName}

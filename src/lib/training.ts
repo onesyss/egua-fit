@@ -297,11 +297,44 @@ export function historyVolumePoints(history: WorkoutSession[]) {
 }
 
 export function historyRepsPoints(history: WorkoutSession[]) {
-  return history.map((s, i) => ({
-    label: `T${i + 1}`,
-    planned: s.exercises.reduce((acc, e) => acc + e.reps * e.sets, 0),
-    done: s.exercises.reduce((acc, e) => acc + e.repsDone * e.sets, 0),
-  }))
+  return history.map((s, i) => {
+    const strength = s.exercises.filter((e) => e.muscleGroup !== 'Cardio')
+    let planned = strength.reduce((acc, e) => acc + e.reps * e.sets, 0)
+    let done = strength.reduce((acc, e) => acc + e.repsDone * e.sets, 0)
+    if (planned <= 0 && done <= 0) {
+      const volume = Math.round(s.volumeKg)
+      if (volume > 0) {
+        planned = volume
+        done = volume
+      }
+    }
+    return {
+      label: `T${i + 1}`,
+      planned,
+      done,
+    }
+  })
+}
+
+/** Treinos por semana com base no histórico (últimos 28 dias). */
+export function weeklyFrequencyFromHistory(history: WorkoutSession[]): number {
+  if (history.length === 0) return 0
+  const now = Date.now()
+  const windowMs = 28 * 24 * 60 * 60 * 1000
+  const dated = history
+    .map((s) => ({ s, t: new Date(s.date).getTime() }))
+    .filter((x) => !Number.isNaN(x.t))
+    .sort((a, b) => a.t - b.t)
+  if (dated.length === 0) return 0
+
+  const recent = dated.filter((x) => now - x.t <= windowMs)
+  const count = recent.length > 0 ? recent.length : dated.length
+  const spanMs =
+    recent.length > 0
+      ? windowMs
+      : Math.max(7 * 24 * 60 * 60 * 1000, now - dated[0].t)
+  const weeks = Math.max(1, spanMs / (7 * 24 * 60 * 60 * 1000))
+  return Math.round((count / weeks) * 10) / 10
 }
 
 export function historyDurationPoints(history: WorkoutSession[]) {
