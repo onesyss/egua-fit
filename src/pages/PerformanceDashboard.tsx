@@ -528,7 +528,7 @@ export function PerformanceDashboard() {
       <StudentEvolutionPanel record={record} studentName={student.name} />
 
       {/* Layout desempenho */}
-      <div className="grid gap-4 lg:grid-cols-12">
+      <div id="painel-desempenho" className="grid gap-4 lg:grid-cols-12">
         <div className="grid gap-4 lg:col-span-8">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard
@@ -544,7 +544,7 @@ export function PerformanceDashboard() {
             <StatCard title="%AC" value={`${dayMetrics.acPercent}%`} />
           </div>
 
-          <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
+          <div className="pdf-chart rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="font-display text-lg font-bold text-ink">
                 Desempenho
@@ -564,7 +564,7 @@ export function PerformanceDashboard() {
         </div>
 
         <div className="flex flex-col gap-4 lg:col-span-4">
-          <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
+          <div className="pdf-chart rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
             <h2 className="mb-1 font-display text-lg font-bold text-ink">
               Frequência
             </h2>
@@ -596,7 +596,7 @@ export function PerformanceDashboard() {
         </div>
 
         <div className="grid gap-4 lg:col-span-7">
-          <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
+          <div className="pdf-chart rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5">
             <h2 className="mb-1 font-display text-lg font-bold text-ink">
               Histórico de carga levantada
             </h2>
@@ -615,7 +615,7 @@ export function PerformanceDashboard() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 lg:col-span-5">
+        <div className="pdf-chart rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 lg:col-span-5">
           <h2 className="mb-1 font-display text-lg font-bold text-ink">
             Músculos trabalhados
           </h2>
@@ -633,7 +633,7 @@ export function PerformanceDashboard() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 lg:col-span-12">
+        <div className="pdf-chart rounded-2xl border border-brand-100/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 sm:p-5 lg:col-span-12">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Layers className="h-4 w-4 text-ink-muted" />
             <h2 className="font-display text-lg font-bold text-ink">
@@ -663,7 +663,7 @@ export function PerformanceDashboard() {
             title="Treinos passados"
             subtitle={`${history.length} sessões salvas`}
             icon={History}
-            className="lg:col-span-12"
+            className="pdf-skip lg:col-span-12"
           >
             <div className="table-scroll -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               <table className="w-full min-w-[640px] text-left text-sm">
@@ -720,7 +720,7 @@ export function PerformanceDashboard() {
           </CollapsibleCard>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:col-span-12">
+        <div className="pdf-skip grid gap-3 sm:grid-cols-3 lg:col-span-12">
           <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/90">
             <Weight className="h-5 w-5 text-brand-600" />
             <div>

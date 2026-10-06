@@ -56,8 +56,14 @@ export function EvolutionPdfHero({
 
       <div className="relative z-[1] px-6 py-8 sm:px-8 sm:py-10">
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25">
-            <span className="font-display text-lg font-bold tracking-wide">EF</span>
+          <div className="evolucao-pdf-mark h-11 w-11 shrink-0 overflow-hidden rounded-xl">
+            <svg viewBox="0 0 64 64" className="h-full w-full" aria-hidden>
+              <rect width="64" height="64" rx="14" fill="#2c4566" />
+              <path d="M0 0h32v32H0z" fill="#b33a3a" opacity="0.9" />
+              <path d="M32 32h32v32H32z" fill="#b33a3a" opacity="0.9" />
+              <path d="M10 54 L54 10" stroke="#2c4566" strokeWidth="12" />
+              <path d="M10 54 L54 10" stroke="#fff" strokeWidth="2.5" opacity="0.85" />
+            </svg>
           </div>
           <div>
             <p className="font-mono text-[10px] font-semibold tracking-[0.2em] text-white/80 uppercase">

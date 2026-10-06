@@ -509,6 +509,10 @@ html.dark .table-scroll {
   scrollbar-color: #1c2430 transparent;
 }
 
+html.dark .evolucao-print-sheet .recharts-legend-item-text {
+  color: var(--color-ink) !important;
+}
+
 .recharts-curve,
 .recharts-line-curve,
 .recharts-area-curve {
@@ -517,6 +521,27 @@ html.dark .table-scroll {
 
 .evolucao-pdf-only {
   display: none !important;
+}
+
+/* Só o arquivo do PDF. Não altera a tela. */
+[data-pdf-export] {
+  position: fixed;
+  left: -12000px;
+  top: 0;
+  width: 860px;
+  background: #fff;
+  color: #0f172a;
+  padding: 28px;
+}
+
+[data-pdf-export] .evolucao-pdf-only {
+  display: block !important;
+}
+
+[data-pdf-export] .recharts-responsive-container > div {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
 }
 
 /* Captura do PDF para WhatsApp/e-mail (html2canvas) */
@@ -622,7 +647,17 @@ body.evolucao-pdf-capture #evolucao-mensal {
     overflow: visible !important;
   }
 
-  body.evolucao-printing main > div > *:not(#evolucao-mensal) {
+  body.evolucao-printing main > div > *:not(#evolucao-mensal):not(#painel-desempenho) {
+    display: none !important;
+  }
+
+  body.evolucao-printing #painel-desempenho {
+    display: grid !important;
+    margin-top: 16px;
+  }
+
+  body.evolucao-printing #painel-desempenho .pdf-skip,
+  body.evolucao-printing #painel-desempenho .pdf-chart:not(:has(svg.recharts-surface)) {
     display: none !important;
   }
 
@@ -634,6 +669,101 @@ body.evolucao-pdf-capture #evolucao-mensal {
   body.evolucao-printing #evolucao-mensal .collapsible-body {
     display: block !important;
     margin-top: 0 !important;
+  }
+
+  body.evolucao-printing {
+    --color-ink: #141a22;
+    --color-ink-muted: #5c6570;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #ffffff;
+    background: #fff !important;
+    color: #141a22 !important;
+    color-scheme: light;
+  }
+
+  body.evolucao-printing #evolucao-mensal,
+  body.evolucao-printing #evolucao-mensal .evolucao-print-sheet,
+  body.evolucao-printing #evolucao-mensal .chart-frame,
+  body.evolucao-printing #evolucao-mensal .rounded-xl,
+  body.evolucao-printing #painel-desempenho,
+  body.evolucao-printing #painel-desempenho .rounded-2xl,
+  body.evolucao-printing #painel-desempenho .rounded-xl,
+  body.evolucao-printing #painel-desempenho .chart-frame {
+    background: #fff !important;
+    color: #141a22 !important;
+    border-color: #e2e8f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.evolucao-printing #evolucao-mensal .evolucao-pdf-hero {
+    background-color: #2c4566 !important;
+    background-image: linear-gradient(
+      135deg,
+      #1c2b40 0%,
+      #2c4566 48%,
+      #8f2e2e 100%
+    ) !important;
+    color: #fff !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal .evolucao-pdf-hero * {
+    color: #fff !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal .evolucao-pdf-hero .evolucao-pdf-mark {
+    background: transparent !important;
+    border-color: transparent !important;
+    overflow: hidden !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal .evolucao-pdf-hero .evolucao-pdf-mark,
+  body.evolucao-printing #evolucao-mensal .evolucao-pdf-hero .evolucao-pdf-mark * {
+    color: inherit !important;
+  }
+
+  body.evolucao-printing :is(#evolucao-mensal, #painel-desempenho) :is(
+    .dark\:text-ink,
+    .dark\:text-ink-muted,
+    .dark\:text-slate-200,
+    .dark\:text-brand-300,
+    .text-slate-900,
+    .text-slate-800,
+    .text-slate-700,
+    .text-slate-500
+  ) {
+    color: #141a22 !important;
+  }
+
+  body.evolucao-printing :is(#evolucao-mensal, #painel-desempenho) :is(
+    .dark\:text-emerald-400,
+    .text-emerald-700
+  ) {
+    color: #047857 !important;
+  }
+
+  body.evolucao-printing :is(#evolucao-mensal, #painel-desempenho) :is(
+    .dark\:text-red-400,
+    .text-red-600
+  ) {
+    color: #b33a3a !important;
+  }
+
+  body.evolucao-printing #evolucao-mensal .recharts-legend-item-text,
+  body.evolucao-printing #painel-desempenho .recharts-legend-item-text {
+    color: #334155 !important;
+  }
+
+  body.evolucao-printing #painel-desempenho .chart-frame,
+  body.evolucao-printing #painel-desempenho .recharts-responsive-container,
+  body.evolucao-printing #painel-desempenho .recharts-responsive-container > div,
+  body.evolucao-printing #painel-desempenho .recharts-wrapper {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  body.evolucao-printing #painel-desempenho .recharts-responsive-container > div {
+    height: 100% !important;
   }
 
   body.evolucao-printing #evolucao-mensal {
@@ -667,20 +797,27 @@ body.evolucao-pdf-capture #evolucao-mensal {
   }
 
   body.evolucao-printing #evolucao-mensal .chart-frame {
-    height: 180px !important;
-    min-height: 180px !important;
-    max-height: 180px !important;
-    overflow: hidden !important;
+    height: 220px !important;
+    min-height: 220px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-  body.evolucao-printing #evolucao-mensal .recharts-responsive-container {
+  body.evolucao-printing #evolucao-mensal .recharts-responsive-container,
+  body.evolucao-printing #evolucao-mensal .recharts-responsive-container > div,
+  body.evolucao-printing #evolucao-mensal .recharts-wrapper {
     width: 100% !important;
-    height: 180px !important;
-    max-height: 180px !important;
+    height: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: relative !important;
   }
 
   body.evolucao-printing #evolucao-mensal svg.recharts-surface {
-    overflow: visible;
+    overflow: visible !important;
+    max-width: 100%;
   }
 
   @page {

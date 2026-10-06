@@ -9,6 +9,7 @@ import {
 import { EvolutionShare } from '../components/EvolutionShare'
 import { EvolutionReportView } from '../components/EvolutionReportView'
 import { CollapsibleCard } from '../components/ui'
+import { setPdfLight } from '../lib/pdfLight'
 
 export function StudentEvolutionPanel({
   record,
@@ -37,12 +38,63 @@ export function StudentEvolutionPanel({
   )
 
   const printPdf = () => {
+    setPanelOpen(true)
+    setPdfLight(true)
+    const liveBody = document.querySelector(
+      '#evolucao-mensal .collapsible-body',
+    ) as HTMLElement | null
+    if (liveBody?.classList.contains('hidden')) {
+      liveBody.classList.remove('hidden')
+    }
+
     document.body.classList.add('evolucao-printing')
+
+    const expandCharts = () => {
+      document
+        .querySelectorAll<HTMLElement>(
+          '#evolucao-mensal .recharts-responsive-container > div, #painel-desempenho .recharts-responsive-container > div',
+        )
+        .forEach((node) => {
+          node.style.setProperty('width', '100%', 'important')
+          node.style.setProperty('height', '100%', 'important')
+          node.style.setProperty('overflow', 'visible', 'important')
+        })
+    }
+
     const cleanup = () => {
       document.body.classList.remove('evolucao-printing')
+      setPdfLight(false)
+      document
+        .querySelectorAll<HTMLElement>(
+          '#evolucao-mensal .recharts-responsive-container > div, #painel-desempenho .recharts-responsive-container > div',
+        )
+        .forEach((node) => {
+          node.style.removeProperty('width')
+          node.style.removeProperty('height')
+          node.style.removeProperty('overflow')
+        })
     }
+
     window.addEventListener('afterprint', cleanup, { once: true })
-    window.setTimeout(() => window.print(), 150)
+
+    const started = Date.now()
+    const tryPrint = () => {
+      const svgs = [
+        ...document.querySelectorAll(
+          '#evolucao-mensal svg.recharts-surface, #painel-desempenho svg.recharts-surface',
+        ),
+      ]
+      const ready =
+        svgs.length > 0 &&
+        svgs.every((svg) => svg.getBoundingClientRect().width > 8)
+      if (!ready && Date.now() - started < 900) {
+        window.setTimeout(tryPrint, 50)
+        return
+      }
+      expandCharts()
+      window.print()
+    }
+    window.setTimeout(tryPrint, 60)
   }
 
   const field =

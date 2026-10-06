@@ -19,6 +19,7 @@ function ImprovementCard({
   detail,
   icon: Icon,
   accent,
+  paper,
 }: {
   title: string
   subtitle: string
@@ -26,32 +27,71 @@ function ImprovementCard({
   detail: string
   icon: typeof TrendingUp
   accent: 'blue' | 'red' | 'green'
+  paper?: boolean
 }) {
   const colors = {
-    blue: 'text-[#2c4566]',
-    red: 'text-[#b33a3a]',
-    green: 'text-emerald-700',
+    blue: paper ? 'text-[#2c4566]' : 'text-[#2c4566] dark:text-brand-300',
+    red: paper ? 'text-[#b33a3a]' : 'text-[#b33a3a] dark:text-red-400',
+    green: paper ? 'text-emerald-700' : 'text-emerald-700 dark:text-emerald-400',
   }
   const pctColor =
     pct == null
-      ? 'text-slate-400'
+      ? paper
+        ? 'text-slate-400'
+        : 'text-slate-400 dark:text-ink-muted'
       : pct > 0
-        ? 'text-emerald-700'
+        ? paper
+          ? 'text-emerald-700'
+          : 'text-emerald-700 dark:text-emerald-400'
         : pct < 0
-          ? 'text-red-600'
-          : 'text-slate-400'
+          ? paper
+            ? 'text-red-600'
+            : 'text-red-600 dark:text-red-400'
+          : paper
+            ? 'text-slate-400'
+            : 'text-slate-400 dark:text-ink-muted'
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+    <div
+      className={
+        paper
+          ? 'rounded-xl border border-slate-200 bg-slate-50/80 p-4'
+          : 'rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-950/55'
+      }
+    >
       <div className="mb-2 flex items-center gap-2">
         <Icon className={`h-4 w-4 ${colors[accent]}`} />
-        <p className="text-sm font-semibold text-slate-900">{title}</p>
+        <p
+          className={
+            paper
+              ? 'text-sm font-semibold text-slate-900'
+              : 'text-sm font-semibold text-slate-900 dark:text-ink'
+          }
+        >
+          {title}
+        </p>
       </div>
       <p className={`font-mono text-3xl font-bold tabular-nums ${pctColor}`}>
         {formatEvolutionPct(pct)}
       </p>
-      <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
-      <p className="mt-2 text-sm text-slate-700">{detail}</p>
+      <p
+        className={
+          paper
+            ? 'mt-1 text-xs text-slate-500'
+            : 'mt-1 text-xs text-slate-500 dark:text-ink-muted'
+        }
+      >
+        {subtitle}
+      </p>
+      <p
+        className={
+          paper
+            ? 'mt-2 text-sm text-slate-700'
+            : 'mt-2 text-sm text-slate-700 dark:text-slate-200'
+        }
+      >
+        {detail}
+      </p>
     </div>
   )
 }
@@ -61,17 +101,33 @@ function ChartBlock({
   children,
   empty,
   wide,
+  paper,
 }: {
   title: string
   children?: ReactNode
   empty?: string
   wide?: boolean
+  paper?: boolean
 }) {
   return (
     <div className={wide ? 'sm:col-span-2' : undefined}>
-      <h4 className="mb-2 text-sm font-semibold text-slate-900">{title}</h4>
+      <h4
+        className={
+          paper
+            ? 'mb-2 text-sm font-semibold text-slate-900'
+            : 'mb-2 text-sm font-semibold text-slate-900 dark:text-ink'
+        }
+      >
+        {title}
+      </h4>
       {children ?? (
-        <p className="flex h-[200px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-sm text-slate-500">
+        <p
+          className={
+            paper
+              ? 'flex h-[200px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-sm text-slate-500'
+              : 'flex h-[200px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/55 dark:text-ink-muted'
+          }
+        >
           {empty}
         </p>
       )}
@@ -85,6 +141,7 @@ export function EvolutionReportView({
   goal,
   showHero = true,
   documentStyle = false,
+  forceLight = false,
   emittedAt,
   headline,
   message,
@@ -94,6 +151,8 @@ export function EvolutionReportView({
   goal?: string
   showHero?: boolean
   documentStyle?: boolean
+  /** PDF: desenha os gráficos na paleta clara, sem mudar o restante da tela. */
+  forceLight?: boolean
   emittedAt?: string
   headline?: string
   message?: string
@@ -117,6 +176,9 @@ export function EvolutionReportView({
   const sheet = documentStyle
     ? 'evolucao-doc-sheet space-y-6 text-slate-900'
     : 'evolucao-print-sheet space-y-5'
+  const chartFrame = documentStyle
+    ? 'chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2'
+    : 'chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2 text-ink dark:border-slate-700 dark:bg-slate-950'
 
   return (
     <article className={sheet}>
@@ -133,33 +195,93 @@ export function EvolutionReportView({
       )}
 
       <div>
-        <h3 className="font-display text-lg font-bold tracking-tight text-slate-900">
+        <h3
+          className={
+            documentStyle
+              ? 'font-display text-lg font-bold tracking-tight text-slate-900'
+              : 'font-display text-lg font-bold tracking-tight text-slate-900 dark:text-ink'
+          }
+        >
           Evolução desde o início
         </h3>
-        <p className="mt-1 text-sm text-slate-500">
+        <p
+          className={
+            documentStyle
+              ? 'mt-1 text-sm text-slate-500'
+              : 'mt-1 text-sm text-slate-500 dark:text-ink-muted'
+          }
+        >
           {data.periodLabel ?? data.label} · desempenho e frequência por treino
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-          <CalendarRange className="mt-0.5 h-4 w-4 shrink-0 text-[#2c4566]" />
+        <div
+          className={
+            documentStyle
+              ? 'flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3'
+              : 'flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-950/55'
+          }
+        >
+          <CalendarRange
+            className={
+              documentStyle
+                ? 'mt-0.5 h-4 w-4 shrink-0 text-[#2c4566]'
+                : 'mt-0.5 h-4 w-4 shrink-0 text-[#2c4566] dark:text-brand-300'
+            }
+          />
           <div>
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p
+              className={
+                documentStyle
+                  ? 'text-xs font-semibold tracking-wide text-slate-500 uppercase'
+                  : 'text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-ink-muted'
+              }
+            >
               Mensuração inicial
             </p>
-            <p className="font-mono text-lg font-bold text-slate-900">
+            <p
+              className={
+                documentStyle
+                  ? 'font-mono text-lg font-bold text-slate-900'
+                  : 'font-mono text-lg font-bold text-slate-900 dark:text-ink'
+              }
+            >
               {data.measurementStartLabel}
             </p>
           </div>
         </div>
-        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-          <CalendarRange className="mt-0.5 h-4 w-4 shrink-0 text-[#b33a3a]" />
+        <div
+          className={
+            documentStyle
+              ? 'flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3'
+              : 'flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-950/55'
+          }
+        >
+          <CalendarRange
+            className={
+              documentStyle
+                ? 'mt-0.5 h-4 w-4 shrink-0 text-[#b33a3a]'
+                : 'mt-0.5 h-4 w-4 shrink-0 text-[#b33a3a] dark:text-red-400'
+            }
+          />
           <div>
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p
+              className={
+                documentStyle
+                  ? 'text-xs font-semibold tracking-wide text-slate-500 uppercase'
+                  : 'text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-ink-muted'
+              }
+            >
               Mensuração final
             </p>
-            <p className="font-mono text-lg font-bold text-slate-900">
+            <p
+              className={
+                documentStyle
+                  ? 'font-mono text-lg font-bold text-slate-900'
+                  : 'font-mono text-lg font-bold text-slate-900 dark:text-ink'
+              }
+            >
               {data.measurementEndLabel}
             </p>
           </div>
@@ -174,6 +296,7 @@ export function EvolutionReportView({
           detail={`${data.strength.startKg.toLocaleString('pt-BR')} kg → ${data.strength.endKg.toLocaleString('pt-BR')} kg`}
           icon={Dumbbell}
           accent="blue"
+          paper={documentStyle}
         />
         <ImprovementCard
           title="Aparelhos"
@@ -186,6 +309,7 @@ export function EvolutionReportView({
           }
           icon={TrendingUp}
           accent="red"
+          paper={documentStyle}
         />
         <ImprovementCard
           title="Frequência"
@@ -194,21 +318,29 @@ export function EvolutionReportView({
           detail={`${data.frequency.sessions} treinos · meta ${data.frequency.goal} (${data.frequency.achievementPct}%)`}
           icon={Repeat}
           accent="green"
+          paper={documentStyle}
         />
       </div>
 
       <div>
-        <h3 className="mb-3 font-display text-lg font-bold tracking-tight text-slate-900">
+        <h3
+          className={
+            documentStyle
+              ? 'mb-3 font-display text-lg font-bold tracking-tight text-slate-900'
+              : 'mb-3 font-display text-lg font-bold tracking-tight text-slate-900 dark:text-ink'
+          }
+        >
           Gráficos do período
         </h3>
         <div className="grid gap-5 sm:grid-cols-2">
           <ChartBlock
             title="Carga levantada por treino"
             empty="Nenhum treino salvo ainda."
+            paper={documentStyle}
           >
             {hasVolume ? (
-              <div className="chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2">
-                <VolumeHistoryChart data={data.volumePoints} />
+              <div className={chartFrame}>
+                <VolumeHistoryChart data={data.volumePoints} forceLight={forceLight} />
               </div>
             ) : undefined}
           </ChartBlock>
@@ -216,10 +348,11 @@ export function EvolutionReportView({
           <ChartBlock
             title="Desempenho por treino (reps)"
             empty="Sem dados de desempenho ainda."
+            paper={documentStyle}
           >
             {hasPerformance ? (
-              <div className="chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2">
-                <PerformanceRepsChart data={data.performancePoints} />
+              <div className={chartFrame}>
+                <PerformanceRepsChart data={data.performancePoints} forceLight={forceLight} />
               </div>
             ) : undefined}
           </ChartBlock>
@@ -227,12 +360,14 @@ export function EvolutionReportView({
           <ChartBlock
             title="Frequência por dia"
             empty="Sem treinos registrados."
+            paper={documentStyle}
           >
             {hasFrequency ? (
-              <div className="chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2">
+              <div className={chartFrame}>
                 <AbsBarChart
                   data={data.frequencyByWeek}
                   seriesName="Treinos"
+                  forceLight={forceLight}
                 />
               </div>
             ) : undefined}
@@ -241,12 +376,14 @@ export function EvolutionReportView({
           <ChartBlock
             title="Evolução nos aparelhos (% de carga)"
             empty="Compare cargas do mesmo exercício em treinos diferentes no período."
+            paper={documentStyle}
           >
             {hasApparatus ? (
-              <div className="chart-frame h-[220px] rounded-xl border border-slate-200 bg-white p-2">
+              <div className={chartFrame}>
                 <AbsBarChart
                   data={data.apparatusChart}
                   seriesName="% carga"
+                  forceLight={forceLight}
                 />
               </div>
             ) : undefined}
@@ -255,8 +392,20 @@ export function EvolutionReportView({
       </div>
 
       {data.apparatus.details.length > 0 && (
-        <div className="rounded-xl border border-slate-200 p-4">
-          <p className="mb-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <div
+          className={
+            documentStyle
+              ? 'rounded-xl border border-slate-200 p-4'
+              : 'rounded-xl border border-slate-200 p-4 dark:border-slate-700 dark:bg-slate-950/55'
+          }
+        >
+          <p
+            className={
+              documentStyle
+                ? 'mb-3 text-xs font-semibold tracking-wide text-slate-500 uppercase'
+                : 'mb-3 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-ink-muted'
+            }
+          >
             Detalhe por aparelho
           </p>
           <ul className="grid gap-2 sm:grid-cols-2">
@@ -266,18 +415,42 @@ export function EvolutionReportView({
               .map((item) => (
                 <li
                   key={item.name}
-                  className="flex justify-between gap-2 border-b border-slate-100 pb-1.5 text-sm last:border-0"
+                  className={
+                    documentStyle
+                      ? 'flex justify-between gap-2 border-b border-slate-100 pb-1.5 text-sm last:border-0'
+                      : 'flex justify-between gap-2 border-b border-slate-100 pb-1.5 text-sm last:border-0 dark:border-slate-800'
+                  }
                 >
-                  <span className="truncate text-slate-800">{item.name}</span>
-                  <span className="shrink-0 font-mono tabular-nums text-slate-500">
+                  <span
+                    className={
+                      documentStyle
+                        ? 'truncate text-slate-800'
+                        : 'truncate text-slate-800 dark:text-ink'
+                    }
+                  >
+                    {item.name}
+                  </span>
+                  <span
+                    className={
+                      documentStyle
+                        ? 'shrink-0 font-mono tabular-nums text-slate-500'
+                        : 'shrink-0 font-mono tabular-nums text-slate-500 dark:text-ink-muted'
+                    }
+                  >
                     {item.from} → {item.to} kg ·{' '}
                     <strong
                       className={
                         (item.pct ?? 0) > 0
-                          ? 'text-emerald-700'
+                          ? documentStyle
+                            ? 'text-emerald-700'
+                            : 'text-emerald-700 dark:text-emerald-400'
                           : (item.pct ?? 0) < 0
-                            ? 'text-red-600'
-                            : 'text-slate-700'
+                            ? documentStyle
+                              ? 'text-red-600'
+                              : 'text-red-600 dark:text-red-400'
+                            : documentStyle
+                              ? 'text-slate-700'
+                              : 'text-slate-700 dark:text-slate-200'
                       }
                     >
                       {formatEvolutionPct(item.pct)}

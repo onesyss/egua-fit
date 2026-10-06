@@ -16,18 +16,23 @@ import {
 } from 'recharts'
 import type { ChartPoint, Exercise, MuscleGroup, RepsSessionPoint } from '../types'
 import { useTheme } from '../context/ThemeContext'
+import { usePdfLight } from '../lib/pdfLight'
 import { useIsMobile } from '../lib/useIsMobile'
 
-function useChartTheme() {
+function useChartTheme(forceLight = false) {
   const { resolved } = useTheme()
-  const isDark = resolved === 'dark'
+  const pdfLight = usePdfLight()
+  const isDark = !(forceLight || pdfLight) && resolved === 'dark'
+  const animate = !(forceLight || pdfLight)
   return {
     isDark,
+    animate,
     grid: isDark ? 'rgba(148,168,196,0.1)' : 'rgba(61,90,128,0.1)',
     tick: isDark ? '#8b93a0' : '#6b7380',
     blue: isDark ? '#7a94b5' : '#3d5a80',
     red: isDark ? '#c96a6a' : '#b33a3a',
     muted: isDark ? '#3a4250' : '#d5d9e0',
+    legend: isDark ? '#e8ebf0' : '#334155',
     tooltip: {
       backgroundColor: isDark ? 'rgba(20,26,34,0.96)' : 'rgba(21,31,46,0.96)',
       border: '1px solid rgba(61,90,128,0.25)',
@@ -40,8 +45,14 @@ function useChartTheme() {
   }
 }
 
-export function PerformanceRepsChart({ data }: { data: RepsSessionPoint[] }) {
-  const t = useChartTheme()
+export function PerformanceRepsChart({
+  data,
+  forceLight = false,
+}: {
+  data: RepsSessionPoint[]
+  forceLight?: boolean
+}) {
+  const t = useChartTheme(forceLight)
   const mobile = useIsMobile()
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -64,7 +75,11 @@ export function PerformanceRepsChart({ data }: { data: RepsSessionPoint[] }) {
         />
         <Tooltip contentStyle={t.tooltip} />
         <Legend
-          wrapperStyle={{ fontSize: mobile ? 10 : 11, fontFamily: 'JetBrains Mono' }}
+          wrapperStyle={{
+            fontSize: mobile ? 10 : 11,
+            fontFamily: 'JetBrains Mono',
+            color: t.legend,
+          }}
           iconType="plainline"
         />
         <Line
@@ -75,6 +90,7 @@ export function PerformanceRepsChart({ data }: { data: RepsSessionPoint[] }) {
           strokeWidth={2}
           strokeDasharray="5 5"
           dot={false}
+          isAnimationActive={t.animate}
         />
         <Line
           type="monotone"
@@ -84,6 +100,7 @@ export function PerformanceRepsChart({ data }: { data: RepsSessionPoint[] }) {
           strokeWidth={2.5}
           dot={{ r: 3, fill: t.red, strokeWidth: 0 }}
           activeDot={{ r: 5 }}
+          isAnimationActive={t.animate}
         />
       </LineChart>
     </ResponsiveContainer>
@@ -124,9 +141,9 @@ export function ExerciseCompareBars({ exercises }: { exercises: Exercise[] }) {
           width={mobile ? 24 : 32}
         />
         <Tooltip contentStyle={t.tooltip} />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
-        <Bar dataKey="planejado" name="Planejado" fill={t.muted} radius={[4, 4, 0, 0]} />
-        <Bar dataKey="realizado" name="Realizado" fill={t.red} radius={[4, 4, 0, 0]} />
+        <Legend wrapperStyle={{ fontSize: 11, color: t.legend }} />
+        <Bar dataKey="planejado" name="Planejado" fill={t.muted} radius={[4, 4, 0, 0]} isAnimationActive={t.animate} />
+        <Bar dataKey="realizado" name="Realizado" fill={t.red} radius={[4, 4, 0, 0]} isAnimationActive={t.animate} />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -152,6 +169,7 @@ export function FrequencyDonut({ percent }: { percent: number }) {
             startAngle={90}
             endAngle={-270}
             stroke="none"
+            isAnimationActive={t.animate}
           >
             <Cell fill={t.red} />
             <Cell fill={t.muted} />
@@ -231,11 +249,13 @@ export function RunningChart({ data }: { data: ChartPoint[] }) {
 export function AbsBarChart({
   data,
   seriesName = 'Valor',
+  forceLight = false,
 }: {
   data: ChartPoint[]
   seriesName?: string
+  forceLight?: boolean
 }) {
-  const t = useChartTheme()
+  const t = useChartTheme(forceLight)
   const mobile = useIsMobile()
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -259,7 +279,13 @@ export function AbsBarChart({
           width={mobile ? 24 : 28}
         />
         <Tooltip contentStyle={t.tooltip} />
-        <Bar dataKey="value" name={seriesName} fill={t.red} radius={[4, 4, 0, 0]} />
+        <Bar
+          dataKey="value"
+          name={seriesName}
+          fill={t.red}
+          radius={[4, 4, 0, 0]}
+          isAnimationActive={t.animate}
+        />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -292,10 +318,12 @@ export function PlankAreaChart({ data }: { data: ChartPoint[] }) {
 
 export function VolumeHistoryChart({
   data,
+  forceLight = false,
 }: {
   data: { label: string; volume: number; change: number }[]
+  forceLight?: boolean
 }) {
-  const t = useChartTheme()
+  const t = useChartTheme(forceLight)
   const mobile = useIsMobile()
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -337,7 +365,7 @@ export function VolumeHistoryChart({
             return [`${n.toLocaleString('pt-BR')} kg`, 'Carga']
           }}
         />
-        <Legend wrapperStyle={{ fontSize: mobile ? 10 : 11 }} />
+        <Legend wrapperStyle={{ fontSize: mobile ? 10 : 11, color: t.legend }} />
         <Bar
           yAxisId="pct"
           dataKey="change"
@@ -345,6 +373,7 @@ export function VolumeHistoryChart({
           fill={t.muted}
           radius={[3, 3, 0, 0]}
           maxBarSize={mobile ? 16 : 28}
+          isAnimationActive={t.animate}
         />
         <Line
           yAxisId="kg"
@@ -354,6 +383,7 @@ export function VolumeHistoryChart({
           stroke={t.red}
           strokeWidth={2.5}
           dot={{ r: 3, fill: t.red, strokeWidth: 0 }}
+          isAnimationActive={t.animate}
         />
       </ComposedChart>
     </ResponsiveContainer>
@@ -415,7 +445,7 @@ export function MusclesWorkedBars({
               : [`${Number(value).toLocaleString('pt-BR')} kg`, 'Volume']
           }
         />
-        <Bar dataKey="volume" name="Volume (kg)" radius={[0, 4, 4, 0]}>
+        <Bar dataKey="volume" name="Volume (kg)" radius={[0, 4, 4, 0]} isAnimationActive={t.animate}>
           {rows.map((row) => (
             <Cell
               key={row.name}
